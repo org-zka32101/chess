@@ -228,9 +228,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                           Expanded(
                             child: FilledButton(
                               onPressed: () {
-                                // TODO: Implement move submission
+                                // Move is made via chess board tap
                               },
-                              child: const Text('Make Move'),
+                              child: const Text('In Game'),
                             ),
                           ),
                         ],
