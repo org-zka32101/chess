@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/animations.dart';
 import 'cpu_game_screen.dart';
 
 class CPUGameSelectionScreen extends StatefulWidget {
@@ -73,28 +74,34 @@ class _CPUGameSelectionScreenState extends State<CPUGameSelectionScreen> {
   }
 
   Widget _buildDifficultyOptions() {
+    const difficulties = [
+      ('Easy', 'Perfect for learning', Icons.psychology_alt, 'easy'),
+      ('Medium', 'Balanced gameplay', Icons.trending_up, 'medium'),
+      ('Hard', 'Challenging opponent', Icons.star, 'hard'),
+    ];
+
     return Column(
       children: [
-        _buildDifficultyCard(
-          title: 'Easy',
-          description: 'Perfect for learning',
-          icon: Icons.psychology_alt,
-          value: 'easy',
-        ),
-        const SizedBox(height: 12),
-        _buildDifficultyCard(
-          title: 'Medium',
-          description: 'Balanced gameplay',
-          icon: Icons.trending_up,
-          value: 'medium',
-        ),
-        const SizedBox(height: 12),
-        _buildDifficultyCard(
-          title: 'Hard',
-          description: 'Challenging opponent',
-          icon: Icons.star,
-          value: 'hard',
-        ),
+        ...difficulties.asMap().entries.map((entry) {
+          final index = entry.key;
+          final (title, description, icon, value) = entry.value;
+          return SlideInAnimation(
+            direction: SlideDirection.left,
+            delay: Duration(milliseconds: index * 100),
+            child: Column(
+              children: [
+                _buildDifficultyCard(
+                  title: title,
+                  description: description,
+                  icon: icon as IconData,
+                  value: value,
+                ),
+                if (index < difficulties.length - 1)
+                  const SizedBox(height: 12),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }
@@ -215,8 +222,8 @@ class _CPUGameSelectionScreenState extends State<CPUGameSelectionScreen> {
 
   void _startGame() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => CPUGameScreen(
+      SmoothPageTransition(
+        page: CPUGameScreen(
           difficulty: _selectedDifficulty,
           timeControl: _selectedTimeControl,
         ),
