@@ -1,0 +1,83 @@
+name: chess_tactics_master
+description: "Chess Tactics Master - Learn chess with AI-powered tactics puzzles and multiplayer online matches."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  riverpod: ^2.4.0
+  flutter_riverpod: ^2.4.0
+  riverpod_generator: ^2.3.0
+
+  # Firebase
+  firebase_core: ^2.24.0
+  firebase_auth: ^4.16.0
+  cloud_firestore: ^4.14.0
+  firebase_database: ^10.2.0
+  firebase_storage: ^11.5.0
+  firebase_analytics: ^10.7.0
+  firebase_crashlytics: ^3.3.0
+
+  # UI/UX
+  flutter_lottie: ^2.7.0
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.0
+
+  # Chess Engine
+  chess: ^0.7.2
+
+  # Local Storage
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  path_provider: ^2.1.1
+
+  # Authentication UI
+  firebase_ui_auth: ^1.10.0
+  google_sign_in: ^6.2.0
+  sign_in_with_apple: ^5.0.0
+
+  # Payment (RevenueCat)
+  # purchases_flutter: ^7.5.0
+
+  # Utilities
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+  intl: ^0.18.0
+  logger: ^2.0.0
+  dio: ^5.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.0
+  riverpod_generator: ^2.3.0
+  freezed: ^2.4.1
+  json_serializable: ^6.7.1
+
+flutter:
+  uses-material-design: true
+
+  # Assets
+  assets:
+    - assets/images/
+    - assets/lottie/
+    - assets/data/puzzles.db
+    - assets/data/stockfish.wasm
+
+  # Fonts
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Roboto-Italic.ttf
+          style: italic
