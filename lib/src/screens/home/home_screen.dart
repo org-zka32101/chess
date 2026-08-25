@@ -2,12 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
+import '../puzzle/puzzle_screen.dart';
+import '../settings/settings_screen.dart';
+import '../profile/profile_screen.dart';
+import '../game/matchmaking_screen.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  Widget build(BuildContext context) {
     final userAsync = ref.watch(authStateNotifierProvider);
 
     return userAsync.when(
@@ -42,7 +51,11 @@ class HomeScreen extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.settings_outlined),
                 onPressed: () {
-                  // TODO: Navigate to settings
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    ),
+                  );
                 },
               ),
             ],
@@ -65,8 +78,16 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () {
-              // TODO: Sign out
+            onPressed: () async {
+              try {
+                await ref.read(authStateNotifierProvider.notifier).signOut();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error signing out: $e')),
+                  );
+                }
+              }
             },
             label: const Text('Sign Out'),
             icon: const Icon(Icons.logout),
@@ -276,7 +297,11 @@ class _DailyChallengeSection extends StatelessWidget {
                   width: double.infinity,
                   child: FilledButton(
                     onPressed: () {
-                      // TODO: Navigate to daily challenge
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const PuzzleScreen(),
+                        ),
+                      );
                     },
                     child: const Text('Start Challenge'),
                   ),
@@ -322,6 +347,35 @@ class _RecentGamesSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Quick play buttons
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.tonal(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const MatchmakingScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Find Opponent'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    // TODO: Implement CPU play
+                  },
+                  child: const Text('Play CPU'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Recent games header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -333,7 +387,11 @@ class _RecentGamesSection extends StatelessWidget {
               ),
               TextButton(
                 onPressed: () {
-                  // TODO: Navigate to game history
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileScreen(),
+                    ),
+                  );
                 },
                 child: const Text('View All'),
               ),
