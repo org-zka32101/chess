@@ -6,6 +6,7 @@ import '../puzzle/puzzle_screen.dart';
 import '../settings/settings_screen.dart';
 import '../profile/profile_screen.dart';
 import '../game/matchmaking_screen.dart';
+import '../game/cpu_game_selection_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -366,7 +367,11 @@ class _RecentGamesSection extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    // TODO: Implement CPU play
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CPUGameSelectionScreen(),
+                      ),
+                    );
                   },
                   child: const Text('Play CPU'),
                 ),
