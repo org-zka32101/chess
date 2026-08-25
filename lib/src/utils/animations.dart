@@ -1,0 +1,350 @@
+import 'package:flutter/material.dart';
+
+/// Animation constants and utilities for Chess Tactics Master
+class AnimationConstants {
+  // Duration constants
+  static const Duration fast = Duration(milliseconds: 200);
+  static const Duration normal = Duration(milliseconds: 300);
+  static const Duration slow = Duration(milliseconds: 500);
+  static const Duration veryVerySlow = Duration(milliseconds: 800);
+
+  // Curve constants
+  static const Curve standardCurve = Curves.easeInOut;
+  static const Curve emphasisCurve = Curves.easeOutCubic;
+  static const Curve decelerationCurve = Curves.easeOut;
+  static const Curve accelerationCurve = Curves.easeIn;
+}
+
+/// Custom page transitions with Material 3 feel
+class SmoothPageTransition extends PageRouteBuilder {
+  final Widget page;
+
+  SmoothPageTransition({
+    required this.page,
+  }) : super(
+    pageBuilder: (context, animation, secondaryAnimation) => page,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const begin = Offset(1.0, 0.0);
+      const end = Offset.zero;
+      const curve = Curves.easeInOutCubic;
+
+      final tween = Tween(begin: begin, end: end).chain(
+        CurveTween(curve: curve),
+      );
+
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: child,
+      );
+    },
+    transitionDuration: AnimationConstants.normal,
+  );
+}
+
+/// Fade in page transition
+class FadePageTransition extends PageRouteBuilder {
+  final Widget page;
+
+  FadePageTransition({
+    required this.page,
+  }) : super(
+    pageBuilder: (context, animation, secondaryAnimation) => page,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: animation.drive(
+          Tween<double>(begin: 0.0, end: 1.0).chain(
+            CurveTween(curve: AnimationConstants.standardCurve),
+          ),
+        ),
+        child: child,
+      );
+    },
+    transitionDuration: AnimationConstants.normal,
+  );
+}
+
+/// Scale fade transition
+class ScaleFadeTransition extends PageRouteBuilder {
+  final Widget page;
+
+  ScaleFadeTransition({
+    required this.page,
+  }) : super(
+    pageBuilder: (context, animation, secondaryAnimation) => page,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const scaleCurve = Interval(0.0, 0.5, curve: Curves.easeOutCubic);
+      const fadeCurve = Interval(0.5, 1.0, curve: Curves.easeInCubic);
+
+      return ScaleTransition(
+        scale: animation.drive(
+          Tween<double>(begin: 0.9, end: 1.0).chain(
+            CurveTween(curve: scaleCurve),
+          ),
+        ),
+        child: FadeTransition(
+          opacity: animation.drive(
+            Tween<double>(begin: 0.0, end: 1.0).chain(
+              CurveTween(curve: fadeCurve),
+            ),
+          ),
+          child: child,
+        ),
+      );
+    },
+    transitionDuration: AnimationConstants.normal,
+  );
+}
+
+/// Shake animation widget
+class ShakeAnimation extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+  final double intensity;
+  final bool isShaking;
+
+  const ShakeAnimation({
+    Key? key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 500),
+    this.intensity = 5.0,
+    this.isShaking = false,
+  }) : super(key: key);
+
+  @override
+  State<ShakeAnimation> createState() => _ShakeAnimationState();
+}
+
+class _ShakeAnimationState extends State<ShakeAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.duration,
+      vsync: this,
+    );
+    if (widget.isShaking) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(ShakeAnimation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isShaking && !oldWidget.isShaking) {
+      _controller.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final offset = Offset(
+          (0.5 - _controller.value) * widget.intensity,
+          0,
+        );
+        return Transform.translate(
+          offset: offset,
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+/// Pulse animation widget
+class PulseAnimation extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+  final double maxScale;
+
+  const PulseAnimation({
+    Key? key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 1000),
+    this.maxScale = 1.1,
+  }) : super(key: key);
+
+  @override
+  State<PulseAnimation> createState() => _PulseAnimationState();
+}
+
+class _PulseAnimationState extends State<PulseAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.duration,
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _animation = Tween<double>(begin: 1.0, end: widget.maxScale).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _animation,
+      child: widget.child,
+    );
+  }
+}
+
+/// Bounce animation widget
+class BounceAnimation extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+  final Curve curve;
+
+  const BounceAnimation({
+    Key? key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 600),
+    this.curve = Curves.elasticOut,
+  }) : super(key: key);
+
+  @override
+  State<BounceAnimation> createState() => _BounceAnimationState();
+}
+
+class _BounceAnimationState extends State<BounceAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.duration,
+      vsync: this,
+    )..forward();
+
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: widget.curve),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _animation,
+      child: widget.child,
+    );
+  }
+}
+
+/// Slide animation for list items
+class SlideInAnimation extends StatefulWidget {
+  final Widget child;
+  final Duration delay;
+  final Duration duration;
+  final SlideDirection direction;
+
+  const SlideInAnimation({
+    Key? key,
+    required this.child,
+    this.delay = Duration.zero,
+    this.duration = const Duration(milliseconds: 400),
+    this.direction = SlideDirection.left,
+  }) : super(key: key);
+
+  @override
+  State<SlideInAnimation> createState() => _SlideInAnimationState();
+}
+
+enum SlideDirection { left, right, up, down }
+
+class _SlideInAnimationState extends State<SlideInAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _offsetAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.duration,
+      vsync: this,
+    );
+
+    Offset beginOffset;
+    switch (widget.direction) {
+      case SlideDirection.left:
+        beginOffset = const Offset(-1.0, 0.0);
+        break;
+      case SlideDirection.right:
+        beginOffset = const Offset(1.0, 0.0);
+        break;
+      case SlideDirection.up:
+        beginOffset = const Offset(0.0, 1.0);
+        break;
+      case SlideDirection.down:
+        beginOffset = const Offset(0.0, -1.0);
+        break;
+    }
+
+    _offsetAnimation = Tween<Offset>(
+      begin: beginOffset,
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+
+    Future.delayed(widget.delay, () {
+      if (mounted) {
+        _controller.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _offsetAnimation,
+      child: FadeTransition(
+        opacity: _controller.drive(
+          Tween<double>(begin: 0.0, end: 1.0).chain(
+            CurveTween(curve: Curves.easeOut),
+          ),
+        ),
+        child: widget.child,
+      ),
+    );
+  }
+}

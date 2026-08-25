@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/animations.dart';
 import '../puzzle/puzzle_screen.dart';
 import '../settings/settings_screen.dart';
 import '../profile/profile_screen.dart';
@@ -53,9 +54,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 icon: const Icon(Icons.settings_outlined),
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const SettingsScreen(),
-                    ),
+                    SmoothPageTransition(page: const SettingsScreen()),
                   );
                 },
               ),
@@ -210,33 +209,35 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+      child: BounceAnimation(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: Colors.white, size: 20),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 11,
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -299,9 +300,7 @@ class _DailyChallengeSection extends StatelessWidget {
                   child: FilledButton(
                     onPressed: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const PuzzleScreen(),
-                        ),
+                        SmoothPageTransition(page: const PuzzleScreen()),
                       );
                     },
                     child: const Text('Start Challenge'),
@@ -355,9 +354,7 @@ class _RecentGamesSection extends StatelessWidget {
                 child: FilledButton.tonal(
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const MatchmakingScreen(),
-                      ),
+                      SmoothPageTransition(page: const MatchmakingScreen()),
                     );
                   },
                   child: const Text('Find Opponent'),
@@ -368,9 +365,7 @@ class _RecentGamesSection extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const CPUGameSelectionScreen(),
-                      ),
+                      SmoothPageTransition(page: const CPUGameSelectionScreen()),
                     );
                   },
                   child: const Text('Play CPU'),
@@ -393,9 +388,7 @@ class _RecentGamesSection extends StatelessWidget {
               TextButton(
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ProfileScreen(),
-                    ),
+                    SmoothPageTransition(page: const ProfileScreen()),
                   );
                 },
                 child: const Text('View All'),
@@ -403,12 +396,20 @@ class _RecentGamesSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          ...mockGames.map((game) => _GameCard(
+          ...mockGames.asMap().entries.map((entry) {
+            final index = entry.key;
+            final game = entry.value;
+            return SlideInAnimation(
+              direction: SlideDirection.left,
+              delay: Duration(milliseconds: index * 100),
+              child: _GameCard(
                 opponent: game['opponent'] as String,
                 result: game['result'] as String,
                 ratingChange: game['ratingChange'] as String,
                 time: game['time'] as String,
-              )),
+              ),
+            );
+          }),
         ],
       ),
     );

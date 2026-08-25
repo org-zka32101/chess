@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/matchmaking_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../utils/animations.dart';
 import 'online_game_screen.dart';
 
 class MatchmakingScreen extends ConsumerStatefulWidget {
@@ -70,8 +71,8 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
       if (mounted) {
         // Navigate to online game screen
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => OnlineGameScreen(gameId: matchId),
+          SmoothPageTransition(
+            page: OnlineGameScreen(gameId: matchId),
           ),
         );
       }
