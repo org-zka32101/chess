@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'screens/auth/auth_wrapper.dart';
 
 class ChessTacticsMasterApp extends StatelessWidget {
   const ChessTacticsMasterApp({Key? key}) : super(key: key);
@@ -27,7 +28,7 @@ class ChessTacticsMasterApp extends StatelessWidget {
         ),
       ),
       themeMode: ThemeMode.system,
-      home: const Placeholder(), // Will be replaced with auth flow
+      home: const AuthWrapper(),
       debugShowCheckedModeBanner: false,
     );
   }
