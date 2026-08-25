@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/matchmaking_provider.dart';
 import '../../providers/user_provider.dart';
+import 'online_game_screen.dart';
 
 class MatchmakingScreen extends ConsumerStatefulWidget {
   const MatchmakingScreen({Key? key}) : super(key: key);
@@ -67,7 +68,12 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
       ref.read(matchmakingStatusProvider.notifier).setStatus(MatchmakingStatus.found);
 
       if (mounted) {
-        Navigator.of(context).pop({'matchId': matchId, 'accepted': true});
+        // Navigate to online game screen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => OnlineGameScreen(gameId: matchId),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

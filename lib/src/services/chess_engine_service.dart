@@ -1,0 +1,214 @@
+import 'package:chess/chess.dart' as chess_lib;
+
+/// Service for chess game logic and move validation
+class ChessEngineService {
+  late chess_lib.Chess _chess;
+
+  ChessEngineService() {
+    _chess = chess_lib.Chess();
+  }
+
+  /// Initialize a new game with optional FEN string
+  void initGame({String? fen}) {
+    if (fen != null) {
+      _chess = chess_lib.Chess.fromFEN(fen);
+    } else {
+      _chess = chess_lib.Chess();
+    }
+  }
+
+  /// Get current FEN string
+  String getCurrentFen() => _chess.fen;
+
+  /// Get current board as 8x8 array
+  List<List<chess_lib.Piece?>> getBoard() => _chess.board;
+
+  /// Get all legal moves for current position
+  List<chess_lib.Move> getLegalMoves() => _chess.moves() as List<chess_lib.Move>;
+
+  /// Get legal moves for a specific square (e.g., "e2")
+  List<chess_lib.Move> getLegalMovesForSquare(String square) {
+    return getLegalMoves()
+        .where((move) => move.fromAlgebraic == square)
+        .toList();
+  }
+
+  /// Validate if a move is legal
+  bool isLegalMove(String from, String to, {String? promotion}) {
+    try {
+      final move = chess_lib.Move(
+        fromAlgebraic: from,
+        toAlgebraic: to,
+        promotion: promotion,
+      );
+      return getLegalMoves().any((m) =>
+          m.fromAlgebraic == move.fromAlgebraic &&
+          m.toAlgebraic == move.toAlgebraic);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Make a move (returns true if successful)
+  bool makeMove(String from, String to, {String? promotion}) {
+    try {
+      final move = chess_lib.Move(
+        fromAlgebraic: from,
+        toAlgebraic: to,
+        promotion: promotion,
+      );
+      return _chess.move(move);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Make a move using standard notation (e.g., "e2e4")
+  bool makeMoveUCI(String uci) {
+    try {
+      if (uci.length < 4) return false;
+      final from = uci.substring(0, 2);
+      final to = uci.substring(2, 4);
+      final promotion = uci.length > 4 ? uci[4] : null;
+      return makeMove(from, to, promotion: promotion);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Undo the last move
+  bool undoMove() {
+    try {
+      final moves = _chess.moves() as List<chess_lib.Move>;
+      if (moves.isEmpty) return false;
+      _chess.undo_move();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Check if the current position is checkmate
+  bool isCheckmate() => _chess.in_checkmate();
+
+  /// Check if the current position is stalemate
+  bool isStalemate() => _chess.in_stalemate();
+
+  /// Check if the current position is check
+  bool isCheck() => _chess.in_check();
+
+  /// Check if the game is over
+  bool isGameOver() => _chess.game_over();
+
+  /// Get game result (white win, black win, draw)
+  String? getGameResult() {
+    if (!isGameOver()) return null;
+
+    if (isCheckmate()) {
+      return _chess.turn == chess_lib.Color.WHITE ? 'black_win' : 'white_win';
+    } else if (isStalemate()) {
+      return 'draw';
+    }
+    return null;
+  }
+
+  /// Get whose turn it is (true = white, false = black)
+  bool isWhiteTurn() => _chess.turn == chess_lib.Color.WHITE;
+
+  /// Get piece at a specific square
+  chess_lib.Piece? getPieceAt(String square) {
+    try {
+      final rank = int.parse(square[1]) - 1;
+      final file = square.codeUnitAt(0) - 'a'.codeUnitAt(0);
+      return _chess.board[rank][file];
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get move history as PGN
+  String getPgnMoves() => _chess.moves().toString();
+
+  /// Get detailed move information
+  List<Map<String, dynamic>> getMoveHistory() {
+    final moves = _chess.moves(
+      {
+        'verbose': true,
+      },
+    ) as List<chess_lib.Move>;
+
+    return moves.map((move) {
+      return {
+        'from': move.fromAlgebraic,
+        'to': move.toAlgebraic,
+        'piece': move.piece,
+        'promotion': move.promotion,
+      };
+    }).toList();
+  }
+
+  /// Get best moves for CPU (simple evaluation)
+  List<chess_lib.Move> getBestMoves({int depth = 2}) {
+    final allMoves = getLegalMoves();
+    if (allMoves.isEmpty) return [];
+
+    // Simple evaluation: prefer captures and checks
+    final scoredMoves = allMoves.map((move) {
+      int score = 0;
+
+      // Bonus for captures
+      if (move.flags.contains(chess_lib.PieceType.pawn)) score += 1;
+      if (move.flags.contains(chess_lib.PieceType.knight)) score += 3;
+      if (move.flags.contains(chess_lib.PieceType.bishop)) score += 3;
+      if (move.flags.contains(chess_lib.PieceType.rook)) score += 5;
+      if (move.flags.contains(chess_lib.PieceType.queen)) score += 9;
+
+      // Apply move temporarily to check if it gives check
+      _chess.move(move);
+      if (isCheck()) score += 2;
+      _chess.undo_move();
+
+      return MapEntry(move, score);
+    }).toList();
+
+    // Sort by score and return top moves
+    scoredMoves.sort((a, b) => b.value.compareTo(a.value));
+    return scoredMoves.take(3).map((e) => e.key).toList();
+  }
+
+  /// Get a random legal move
+  chess_lib.Move? getRandomMove() {
+    final moves = getLegalMoves();
+    if (moves.isEmpty) return null;
+    moves.shuffle();
+    return moves.first;
+  }
+
+  /// Reset the game
+  void reset() {
+    _chess = chess_lib.Chess();
+  }
+
+  /// Load position from FEN
+  bool loadFromFen(String fen) {
+    try {
+      _chess = chess_lib.Chess.fromFEN(fen);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Convert square name to board indices
+  static Map<String, int> squareToIndices(String square) {
+    return {
+      'file': square.codeUnitAt(0) - 'a'.codeUnitAt(0),
+      'rank': 8 - (int.parse(square[1])),
+    };
+  }
+
+  /// Convert board indices to square name
+  static String indicesToSquare(int rank, int file) {
+    return String.fromCharCode('a'.codeUnitAt(0) + file) + (8 - rank).toString();
+  }
+}
