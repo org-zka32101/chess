@@ -8,6 +8,7 @@ import '../settings/settings_screen.dart';
 import '../profile/profile_screen.dart';
 import '../game/matchmaking_screen.dart';
 import '../game/cpu_game_selection_screen.dart';
+import '../premium/premium_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -50,6 +51,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             centerTitle: true,
             elevation: 0,
             actions: [
+              IconButton(
+                icon: const Icon(Icons.star_outline),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    SmoothPageTransition(page: const PremiumScreen()),
+                  );
+                },
+                tooltip: 'Premium',
+              ),
               IconButton(
                 icon: const Icon(Icons.settings_outlined),
                 onPressed: () {
