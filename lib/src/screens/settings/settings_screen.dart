@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/user_preferences_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -31,12 +33,7 @@ class SettingsScreen extends ConsumerWidget {
                 _buildSettingSection(
                   title: 'Display',
                   children: [
-                    _buildThemeOption(
-                      context,
-                      ref,
-                      preferences.themeMode,
-                      preferencesService,
-                    ),
+                    _buildNewThemeOption(context, ref),
                     const Divider(height: 1),
                     _buildLanguageOption(
                       context,
@@ -197,6 +194,73 @@ class SettingsScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
       ],
+    );
+  }
+
+  Widget _buildNewThemeOption(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+    final themeNotifier = ref.read(themeModeProvider.notifier);
+
+    String themeName;
+    switch (themeMode) {
+      case ThemeMode.light:
+        themeName = 'Light';
+        break;
+      case ThemeMode.dark:
+        themeName = 'Dark';
+        break;
+      case ThemeMode.system:
+        themeName = 'System';
+        break;
+    }
+
+    return ListTile(
+      title: const Text('Theme'),
+      subtitle: Text(themeName),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          builder: (context) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: const Text('Light'),
+                  trailing: themeMode == ThemeMode.light
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : null,
+                  onTap: () {
+                    themeNotifier.setLightMode();
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: const Text('Dark'),
+                  trailing: themeMode == ThemeMode.dark
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : null,
+                  onTap: () {
+                    themeNotifier.setDarkMode();
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: const Text('System'),
+                  trailing: themeMode == ThemeMode.system
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : null,
+                  onTap: () {
+                    themeNotifier.setSystemMode();
+                    Navigator.pop(context);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
