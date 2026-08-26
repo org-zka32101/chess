@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game.dart';
 import '../services/chess_engine_service.dart';
+import '../services/shogi_rank_service.dart';
 
 /// Online game state with real-time synchronization
 class OnlineGameState {
@@ -287,9 +288,16 @@ class OnlineGameService {
       final ratingDeltas =
           _calculateRatingDeltas(result, whiteRating, blackRating);
 
+      // Calculate new ratings and shogi ranks
+      final newWhiteRating = whiteRating + ratingDeltas['white']!;
+      final newBlackRating = blackRating + ratingDeltas['black']!;
+      final whiteNewRank = ShogiRankService.calculateRank(newWhiteRating);
+      final blackNewRank = ShogiRankService.calculateRank(newBlackRating);
+
       // Update white player
       await _firestore.collection('users').doc(whitePlayerId).update({
-        'onlineRating': whiteRating + ratingDeltas['white']!,
+        'onlineRating': newWhiteRating,
+        'shogiRank': whiteNewRank.toJson(),
         'gamesPlayed': FieldValue.increment(1),
         'wins': result.startsWith('white')
             ? FieldValue.increment(1)
@@ -302,7 +310,8 @@ class OnlineGameService {
 
       // Update black player
       await _firestore.collection('users').doc(blackPlayerId).update({
-        'onlineRating': blackRating + ratingDeltas['black']!,
+        'onlineRating': newBlackRating,
+        'shogiRank': blackNewRank.toJson(),
         'gamesPlayed': FieldValue.increment(1),
         'wins': result == 'black_win'
             ? FieldValue.increment(1)
