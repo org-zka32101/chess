@@ -1,5 +1,7 @@
+import 'dart:math' show Random;
 import 'package:chess/chess.dart' as chess_lib;
 import 'chess_engine_service.dart';
+import 'opening_book.dart';
 
 /// Enumeration for AI difficulty levels
 enum AIDifficulty {
@@ -247,6 +249,9 @@ class AIOpponentEngine {
   final Map<String, int> _transpositionTable = {};
   int _nodesEvaluated = 0;
 
+  // Random number generator for opening book move selection
+  final Random _random = Random();
+
   AIOpponentEngine(this.chess, this.difficulty) {
     _evaluator = PositionEvaluator(chess, difficulty);
   }
@@ -265,6 +270,35 @@ class AIOpponentEngine {
     // If only one move available, play it
     if (legalMoves.length == 1) {
       return _moveToUCI(legalMoves.first);
+    }
+
+    // Check opening book for known good moves
+    final bookMoves = OpeningBook.getRecommendedMoves(chess.fen());
+    if (bookMoves.isNotEmpty) {
+      // Filter book moves to only legal moves
+      final legalBookMoves = bookMoves
+          .where((uciMove) => _isLegalMove(legalMoves, uciMove))
+          .toList();
+
+      if (legalBookMoves.isNotEmpty) {
+        // Use the first (strongest) book move, with some randomness for variety
+        if (difficulty == AIDifficulty.easy) {
+          // Easy: pick randomly from first 3 moves (more variety)
+          final moveIndex = _random.nextInt(
+              (legalBookMoves.length < 3 ? legalBookMoves.length : 3));
+          return legalBookMoves[moveIndex];
+        } else {
+          // Medium/Hard: mostly play the best move, sometimes alternatives
+          final shouldPlayBest = _random.nextDouble() > 0.1; // 90% best move
+          if (shouldPlayBest && legalBookMoves.length > 1) {
+            return legalBookMoves[0];
+          } else if (legalBookMoves.length > 1) {
+            return legalBookMoves[_random.nextInt(legalBookMoves.length - 1) + 1];
+          } else {
+            return legalBookMoves[0];
+          }
+        }
+      }
     }
 
     chess_lib.Move? bestMove;
@@ -299,6 +333,16 @@ class AIOpponentEngine {
     }
 
     return bestMove != null ? _moveToUCI(bestMove) : null;
+  }
+
+  /// Check if a UCI move is legal
+  bool _isLegalMove(List<chess_lib.Move> legalMoves, String uciMove) {
+    for (final move in legalMoves) {
+      if (_moveToUCI(move) == uciMove) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Minimax algorithm with alpha-beta pruning
