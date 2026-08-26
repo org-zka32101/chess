@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chess/src/providers/comparison_provider.dart';
 import 'package:chess/src/models/head_to_head_stats.dart';
+import 'package:chess/src/widgets/animations/chart_entrance_animation.dart';
 
 /// Screen for displaying player-to-player comparison
 class PlayerComparisonScreen extends ConsumerWidget {
@@ -187,61 +188,63 @@ class PlayerComparisonScreen extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline,
+          ChartEntranceAnimation(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                borderRadius: BorderRadius.circular(8),
               ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Player 1 wins
-                Column(
-                  children: [
-                    Text(
-                      '${stats.player1Wins}',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '勝利',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-                // Draws
-                Column(
-                  children: [
-                    Text(
-                      '${stats.draws}',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '引き分け',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-                // Player 2 wins
-                Column(
-                  children: [
-                    Text(
-                      '${stats.player2Wins}',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '敗北',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Player 1 wins
+                  Column(
+                    children: [
+                      Text(
+                        '${stats.player1Wins}',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '勝利',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  // Draws
+                  Column(
+                    children: [
+                      Text(
+                        '${stats.draws}',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '引き分け',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  // Player 2 wins
+                  Column(
+                    children: [
+                      Text(
+                        '${stats.player2Wins}',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '敗北',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -249,20 +252,26 @@ class PlayerComparisonScreen extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: _buildWinRateCard(
-                  context,
-                  player1Name,
-                  stats.player1WinRate,
-                  Colors.blue,
+                child: ChartEntranceAnimation(
+                  duration: const Duration(milliseconds: 600),
+                  child: _buildWinRateCard(
+                    context,
+                    player1Name,
+                    stats.player1WinRate,
+                    Colors.blue,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _buildWinRateCard(
-                  context,
-                  player2Name,
-                  stats.player2WinRate,
-                  Colors.orange,
+                child: ChartEntranceAnimation(
+                  duration: const Duration(milliseconds: 700),
+                  child: _buildWinRateCard(
+                    context,
+                    player2Name,
+                    stats.player2WinRate,
+                    Colors.orange,
+                  ),
                 ),
               ),
             ],
