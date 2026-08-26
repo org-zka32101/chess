@@ -1,214 +1,226 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'shogi_rank_service.freezed.dart';
-part 'shogi_rank_service.g.dart';
 
-/// Shogi dan/kyu rank with ELO mapping
+/// 将棋式ランキング（段位・級位）の管理サービス
+///
+/// ELOレーティングを将棋の段位（段/級）に変換します
+/// - 級（きゅう）: 30級～1級（初心者レベル、1級が最高級）
+/// - 段（だん）: 1段～8段（上級者レベル、8段が最高段）
+class ShogiRankService {
+  // 段位のしきい値（ELO）
+  static const int kyuThreshold = 1000;      // 級から段への境界
+  static const int kyu1Threshold = 1200;     // 1級
+  static const int kyu5Threshold = 1100;     // 5級
+  static const int dan1Threshold = 1400;     // 1段
+  static const int dan3Threshold = 1550;     // 3段
+  static const int dan5Threshold = 1750;     // 5段
+  static const int dan7Threshold = 1900;     // 7段
+
+  /// ELOレーティングから将棋の段位を計算する
+  static ShogiRank calculateRank(int eloRating) {
+    if (eloRating >= dan7Threshold) {
+      return ShogiRank.dan(8);
+    } else if (eloRating >= dan5Threshold) {
+      return ShogiRank.dan(7);
+    } else if (eloRating >= dan3Threshold) {
+      return ShogiRank.dan(6);
+    } else if (eloRating >= dan1Threshold) {
+      return ShogiRank.dan(5);
+    } else if (eloRating >= kyu1Threshold) {
+      return ShogiRank.dan(4);
+    } else if (eloRating >= kyu5Threshold) {
+      return ShogiRank.dan(3);
+    } else if (eloRating >= kyuThreshold) {
+      return ShogiRank.dan(2);
+    } else if (eloRating >= 900) {
+      return ShogiRank.dan(1);
+    } else if (eloRating >= 800) {
+      return ShogiRank.kyu(1);
+    } else if (eloRating >= 700) {
+      return ShogiRank.kyu(3);
+    } else if (eloRating >= 600) {
+      return ShogiRank.kyu(5);
+    } else if (eloRating >= 500) {
+      return ShogiRank.kyu(10);
+    } else if (eloRating >= 400) {
+      return ShogiRank.kyu(15);
+    } else {
+      return ShogiRank.kyu(20);
+    }
+  }
+
+  /// 段位から表示用文字列を取得する
+  /// 例: "3段", "5級"
+  static String displayName(ShogiRank rank) {
+    return rank.when(
+      dan: (level) => '$level段',
+      kyu: (level) => '$level級',
+    );
+  }
+
+  /// 段位から説明テキストを取得する
+  static String getDescription(ShogiRank rank) {
+    return rank.when(
+      dan: (level) {
+        switch (level) {
+          case 8:
+            return 'プロ棋士レベル - 最高段階';
+          case 7:
+            return '高段者 - エキスパート';
+          case 6:
+            return '高段者 - 上級者';
+          case 5:
+            return '中段者 - 上級者';
+          case 4:
+            return '初段 - 中級者';
+          case 3:
+            return '初段 - 中級者';
+          case 2:
+            return '初段 - 中級者';
+          case 1:
+            return '初段 - 初級上級者';
+          default:
+            return '段位';
+        }
+      },
+      kyu: (level) {
+        switch (level) {
+          case 1:
+            return '1級 - 初心者上級';
+          case 3:
+            return '3級 - 初心者中級';
+          case 5:
+            return '5級 - 初心者';
+          case 10:
+            return '10級 - 初心者';
+          case 15:
+            return '15級 - ビギナー';
+          case 20:
+            return '20級 - ビギナー';
+          default:
+            return '級位';
+        }
+      },
+    );
+  }
+
+  /// 進行度を計算する（0.0～1.0）
+  /// 次の段位までの進捗を表します
+  static double progressToNextRank(int eloRating, ShogiRank currentRank) {
+    final nextRank = calculateRank(eloRating + 100);
+
+    if (currentRank == nextRank) {
+      // 次の段位のしきい値を取得
+      final threshold = _getNextThreshold(currentRank);
+      final previousThreshold = _getPreviousThreshold(currentRank);
+
+      final range = threshold - previousThreshold;
+      final current = eloRating - previousThreshold;
+
+      return (current / range).clamp(0.0, 1.0);
+    }
+
+    return 0.0;
+  }
+
+  static int _getNextThreshold(ShogiRank rank) {
+    return rank.when(
+      dan: (level) {
+        switch (level) {
+          case 1:
+            return dan1Threshold;
+          case 2:
+            return 1450;
+          case 3:
+            return dan3Threshold;
+          case 4:
+            return 1600;
+          case 5:
+            return 1700;
+          case 6:
+            return 1800;
+          case 7:
+            return dan7Threshold;
+          case 8:
+            return 2000;
+          default:
+            return 2000;
+        }
+      },
+      kyu: (level) {
+        switch (level) {
+          case 1:
+            return dan1Threshold;
+          case 3:
+            return kyu1Threshold;
+          case 5:
+            return kyu5Threshold;
+          case 10:
+            return 1050;
+          case 15:
+            return 650;
+          case 20:
+            return 500;
+          default:
+            return 1400;
+        }
+      },
+    );
+  }
+
+  static int _getPreviousThreshold(ShogiRank rank) {
+    return rank.when(
+      dan: (level) {
+        switch (level) {
+          case 1:
+            return 900;
+          case 2:
+            return 1000;
+          case 3:
+            return kyu1Threshold;
+          case 4:
+            return 1500;
+          case 5:
+            return dan1Threshold;
+          case 6:
+            return 1700;
+          case 7:
+            return 1800;
+          case 8:
+            return dan7Threshold;
+          default:
+            return 1900;
+        }
+      },
+      kyu: (level) {
+        switch (level) {
+          case 1:
+            return 750;
+          case 3:
+            return 900;
+          case 5:
+            return 1000;
+          case 10:
+            return 700;
+          case 15:
+            return 500;
+          case 20:
+            return 0;
+          default:
+            return 800;
+        }
+      },
+    );
+  }
+}
+
+/// 将棋の段位を表すクラス
 @freezed
 class ShogiRank with _$ShogiRank {
-  // Kyu ranks (1級 to 20級)
-  const factory ShogiRank.kyu(int level) = _KyuRank;
-
-  // Dan ranks (1段 to 8段)
-  const factory ShogiRank.dan(int level) = _DanRank;
-
-  /// Display name (e.g., "5級", "3段")
-  String displayName() {
-    if (this is _KyuRank) {
-      final kyu = this as _KyuRank;
-      return '${kyu.level}級';
-    } else {
-      final dan = this as _DanRank;
-      return dan.level == 1 ? '初段' : '${dan.level}段';
-    }
-  }
-
-  /// Get kyu level, or -1 if dan
-  int? kyu() {
-    if (this is _KyuRank) {
-      return (this as _KyuRank).level;
-    }
-    return null;
-  }
-
-  /// Get dan level, or -1 if kyu
-  int? dan() {
-    if (this is _DanRank) {
-      return (this as _DanRank).level;
-    }
-    return null;
-  }
-
-  /// Get detailed description
-  String getDescription() {
-    return displayName();
-  }
-
-  /// Progress to next rank (returns null if already at 8段)
-  ShogiRank? nextRank() {
-    if (this is _KyuRank) {
-      final kyu = (this as _KyuRank).level;
-      if (kyu == 1) {
-        return const ShogiRank.dan(1); // 初段
-      }
-      return ShogiRank.kyu(kyu - 1);
-    } else {
-      final dan = (this as _DanRank).level;
-      if (dan < 8) {
-        return ShogiRank.dan(dan + 1);
-      }
-      return null; // Already at top
-    }
-  }
+  const factory ShogiRank.dan(int level) = _Dan;
+  const factory ShogiRank.kyu(int level) = _Kyu;
 
   factory ShogiRank.fromJson(Map<String, dynamic> json) =>
       _$ShogiRankFromJson(json);
-}
-
-/// Service for managing shogi rank conversions
-class ShogiRankService {
-  /// ELO rating thresholds for shogi ranks
-  static const Map<int, int> _rankThresholds = {
-    // 級 (kyu) - ascending numbers, descending skill
-    20: 0,      // 20級
-    19: 100,    // 19級
-    18: 200,    // 18級
-    17: 300,    // 17級
-    16: 400,    // 16級
-    15: 500,    // 15級
-    14: 600,    // 14級
-    13: 700,    // 13級
-    12: 800,    // 12級
-    11: 900,    // 11級
-    10: 1000,   // 10級
-    9: 1100,    // 9級
-    8: 1200,    // 8級
-    7: 1300,    // 7級
-    6: 1400,    // 6級
-    5: 1500,    // 5級
-    4: 1600,    // 4級
-    3: 1700,    // 3級
-    2: 1800,    // 2級
-    1: 1900,    // 1級
-    // 段 (dan) - ascending numbers, ascending skill
-    0: 2000,    // 初段 (1st dan)
-    // Note: higher dan levels require even higher ratings
-  };
-
-  /// Calculate ShogiRank from ELO rating
-  ///
-  /// Mapping:
-  /// - 0-499: 20級
-  /// - 500-599: 19級
-  /// - ... (progressive)
-  /// - 1900+: 初段 (1st dan) and up
-  static ShogiRank calculateRank(int eloRating) {
-    if (eloRating >= 2400) return const ShogiRank.dan(8);   // 8段
-    if (eloRating >= 2200) return const ShogiRank.dan(7);   // 7段
-    if (eloRating >= 2000) return const ShogiRank.dan(6);   // 6段
-    if (eloRating >= 1900) return const ShogiRank.dan(5);   // 5段
-    if (eloRating >= 1800) return const ShogiRank.dan(4);   // 4段
-    if (eloRating >= 1700) return const ShogiRank.dan(3);   // 3段
-    if (eloRating >= 1600) return const ShogiRank.dan(2);   // 2段
-    if (eloRating >= 1500) return const ShogiRank.dan(1);   // 初段
-    if (eloRating >= 1400) return const ShogiRank.kyu(1);   // 1級
-    if (eloRating >= 1300) return const ShogiRank.kyu(2);   // 2級
-    if (eloRating >= 1200) return const ShogiRank.kyu(3);   // 3級
-    if (eloRating >= 1100) return const ShogiRank.kyu(4);   // 4級
-    if (eloRating >= 1000) return const ShogiRank.kyu(5);   // 5級
-    if (eloRating >= 900) return const ShogiRank.kyu(6);    // 6級
-    if (eloRating >= 800) return const ShogiRank.kyu(7);    // 7級
-    if (eloRating >= 700) return const ShogiRank.kyu(8);    // 8級
-    if (eloRating >= 600) return const ShogiRank.kyu(9);    // 9級
-    if (eloRating >= 500) return const ShogiRank.kyu(10);   // 10級
-    if (eloRating >= 400) return const ShogiRank.kyu(11);   // 11級
-    if (eloRating >= 300) return const ShogiRank.kyu(12);   // 12級
-    if (eloRating >= 200) return const ShogiRank.kyu(13);   // 13級
-    if (eloRating >= 100) return const ShogiRank.kyu(14);   // 14級
-    return const ShogiRank.kyu(20); // 20級 (minimum)
-  }
-
-  /// Parse rank string (e.g., "5級", "3段", "初段")
-  static ShogiRank parseRank(String rankString) {
-    if (rankString.contains('段')) {
-      if (rankString == '初段') {
-        return const ShogiRank.dan(1);
-      }
-      final level = int.tryParse(rankString.replaceAll('段', '')) ?? 1;
-      return ShogiRank.dan(level);
-    } else if (rankString.contains('級')) {
-      final level = int.tryParse(rankString.replaceAll('級', '')) ?? 20;
-      return ShogiRank.kyu(level);
-    }
-    return const ShogiRank.dan(1); // Default: 1st dan
-  }
-
-  /// Get ELO range for a rank
-  static (int, int) getRatingRange(ShogiRank rank) {
-    if (rank is _KyuRank) {
-      final level = rank.level;
-      final min = switch (level) {
-        1 => 1400,
-        2 => 1300,
-        3 => 1200,
-        4 => 1100,
-        5 => 1000,
-        6 => 900,
-        7 => 800,
-        8 => 700,
-        9 => 600,
-        10 => 500,
-        11 => 400,
-        12 => 300,
-        13 => 200,
-        14 => 100,
-        _ => 0,
-      };
-      return (min, min + 99);
-    } else {
-      final level = (rank as _DanRank).level;
-      final min = switch (level) {
-        1 => 1500,
-        2 => 1600,
-        3 => 1700,
-        4 => 1800,
-        5 => 1900,
-        6 => 2000,
-        7 => 2200,
-        _ => 2400,
-      };
-      return (min, min + 199);
-    }
-  }
-
-  /// Get progress to next rank (0.0 to 1.0)
-  static double getProgressToNextRank(int eloRating) {
-    final currentRank = calculateRank(eloRating);
-    final (minElo, maxElo) = getRatingRange(currentRank);
-
-    if (eloRating < minElo) return 0.0;
-    if (eloRating > maxElo) return 1.0;
-
-    return (eloRating - minElo) / (maxElo - minElo + 1);
-  }
-
-  /// Check if two ranks are the same
-  static bool isSameRank(ShogiRank a, ShogiRank b) {
-    if (a is _KyuRank && b is _KyuRank) {
-      return a.level == b.level;
-    } else if (a is _DanRank && b is _DanRank) {
-      return a.level == b.level;
-    }
-    return false;
-  }
-
-  /// Compare two ranks (-1: a < b, 0: a == b, 1: a > b)
-  static int compareRanks(ShogiRank a, ShogiRank b) {
-    final aElo = _rankThresholds[a is _KyuRank ? (a as _KyuRank).level : -(a as _DanRank).level] ?? 1500;
-    final bElo = _rankThresholds[b is _KyuRank ? (b as _KyuRank).level : -(b as _DanRank).level] ?? 1500;
-
-    if (aElo < bElo) return -1;
-    if (aElo > bElo) return 1;
-    return 0;
-  }
 }

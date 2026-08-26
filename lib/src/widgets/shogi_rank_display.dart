@@ -1,308 +1,308 @@
 import 'package:flutter/material.dart';
-import '../services/shogi_rank_service.dart';
+import 'package:chess/src/services/shogi_rank_service.dart';
 
-/// Display widget for shogi ranks with color coding
+/// Displays a player's shogi rank with visual styling
 class ShogiRankDisplay extends StatelessWidget {
-  final String rankString;
+  final ShogiRank rank;
+  final int eloRating;
   final bool compact;
+  final TextStyle? textStyle;
 
   const ShogiRankDisplay({
     Key? key,
-    required this.rankString,
+    required this.rank,
+    required this.eloRating,
     this.compact = false,
+    this.textStyle,
   }) : super(key: key);
+
+  Color _getRankColor() {
+    return rank.when(
+      dan: (level) {
+        // Dan色の濃淡でレベルを表現
+        switch (level) {
+          case 8:
+            return const Color(0xFFFFD700); // Gold
+          case 7:
+            return const Color(0xFFC0C0C0); // Silver
+          case 6:
+            return const Color(0xFFCD7F32); // Bronze
+          case 5:
+          case 4:
+            return const Color(0xFF6A4C93); // Purple
+          case 3:
+          case 2:
+            return const Color(0xFF1982C4); // Blue
+          default:
+            return const Color(0xFF8AC926); // Green
+        }
+      },
+      kyu: (level) {
+        // 級の色: グリーン系
+        if (level <= 3) {
+          return const Color(0xFF52B788); // Dark green
+        } else if (level <= 10) {
+          return const Color(0xFF74C69D); // Medium green
+        } else {
+          return const Color(0xFFB7E4C7); // Light green
+        }
+      },
+    );
+  }
+
+  Widget _buildRankBadge() {
+    final color = _getRankColor();
+    final displayName = ShogiRankService.displayName(rank);
+
+    if (compact) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.2),
+          border: Border.all(color: color, width: 1),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          displayName,
+          style: textStyle ??
+              TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: color,
+              ),
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [color.withOpacity(0.3), color.withOpacity(0.1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(color: color, width: 2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              displayName,
+              style: textStyle ??
+                  TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                    color: color,
+                  ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          ShogiRankService.getDescription(rank),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final rank = ShogiRankService.parseRank(rankString);
-    final theme = Theme.of(context);
-
-    if (compact) {
-      return _buildCompactBadge(context, rank);
-    } else {
-      return _buildDetailedDisplay(context, rank);
-    }
-  }
-
-  /// Compact badge display (for leaderboard cards)
-  Widget _buildCompactBadge(BuildContext context, ShogiRank rank) {
-    final color = _getRankColor(rank);
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        border: Border.all(color: color),
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      child: Text(
-        rankString,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  /// Detailed display with progress bar
-  Widget _buildDetailedDisplay(BuildContext context, ShogiRank rank) {
-    final color = _getRankColor(rank);
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(12.0),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        border: Border.all(color: color, width: 2.0),
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: Column(
-        children: [
-          Text(
-            rankString,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8.0),
-          Text(
-            _getRankDescription(rank),
-            style: theme.textTheme.labelSmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Get color for rank
-  Color _getRankColor(ShogiRank rank) {
-    if (rank is _KyuRank) {
-      return switch ((rank as _KyuRank).level) {
-        1 => const Color(0xFF4CAF50), // Bright green
-        <= 5 => const Color(0xFF66BB6A), // Medium green
-        <= 10 => const Color(0xFF81C784), // Light green
-        <= 15 => const Color(0xFFA5D6A7), // Lighter green
-        _ => const Color(0xFFC8E6C9), // Very light green
-      };
-    } else {
-      return switch ((rank as _DanRank).level) {
-        1 => const Color(0xFF2196F3), // Blue
-        2 => const Color(0xFF42A5F5), // Light blue
-        3 => const Color(0xFF64B5F6), // Lighter blue
-        4 => const Color(0xFF7E57C2), // Purple
-        5 => const Color(0xFF9575CD), // Light purple
-        6 => const Color(0xFFFFB300), // Gold
-        7 => const Color(0xFFFFC107), // Amber
-        _ => const Color(0xFFFF6F00), // Orange
-      };
-    }
-  }
-
-  /// Get description for rank
-  String _getRankDescription(ShogiRank rank) {
-    if (rank is _KyuRank) {
-      return '初心者レベル';
-    } else {
-      return switch ((rank as _DanRank).level) {
-        1 => 'アマ初段相当',
-        2 => 'アマ2段相当',
-        3 => 'アマ3段相当',
-        4 => 'アマ4段相当',
-        5 => 'アマ5段相当',
-        6 => 'アマ6段相当',
-        7 => 'プロ同等',
-        _ => 'マスター',
-      };
-    }
+    return _buildRankBadge();
   }
 }
 
-/// Progress bar showing progression to next rank
+/// Displays rank progression bar
 class ShogiRankProgressBar extends StatelessWidget {
-  final int currentRating;
-  final double height;
+  final ShogiRank currentRank;
+  final int eloRating;
+  final bool showLabel;
 
   const ShogiRankProgressBar({
     Key? key,
-    required this.currentRating,
-    this.height = 12.0,
+    required this.currentRank,
+    required this.eloRating,
+    this.showLabel = true,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final progress = ShogiRankService.getProgressToNextRank(currentRating);
-    final currentRank = ShogiRankService.calculateRank(currentRating);
-    final nextRank = currentRank.nextRank();
-    final theme = Theme.of(context);
+    final progress = ShogiRankService.progressToNextRank(eloRating, currentRank);
+    final currentRankName = ShogiRankService.displayName(currentRank);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (nextRank != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  currentRank.displayName(),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '${(progress * 100).toStringAsFixed(0)}%',
-                  style: theme.textTheme.labelSmall,
-                ),
-                Text(
-                  nextRank.displayName(),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+        if (showLabel) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '段位進度',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              Text(
+                currentRankName,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
           ),
+          const SizedBox(height: 8),
+        ],
         ClipRRect(
-          borderRadius: BorderRadius.circular(height / 2),
+          borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: progress,
-            minHeight: height,
-            backgroundColor: theme.colorScheme.surfaceVariant,
+            minHeight: 8,
+            backgroundColor: Colors.grey.withOpacity(0.3),
             valueColor: AlwaysStoppedAnimation<Color>(
-              theme.colorScheme.primary,
+              _getProgressColor(currentRank),
             ),
           ),
         ),
-        if (nextRank == null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Text(
-              'マスタークラス達成！',
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-              ),
-            ),
+        if (showLabel) ...[
+          const SizedBox(height: 4),
+          Text(
+            '${(progress * 100).toStringAsFixed(0)}% 次のランクまで',
+            style: Theme.of(context).textTheme.bodySmall,
           ),
+        ],
       ],
+    );
+  }
+
+  Color _getProgressColor(ShogiRank rank) {
+    return rank.when(
+      dan: (level) {
+        switch (level) {
+          case 8:
+            return const Color(0xFFFFD700);
+          case 7:
+            return const Color(0xFFC0C0C0);
+          case 6:
+            return const Color(0xFFCD7F32);
+          case 5:
+          case 4:
+            return const Color(0xFF6A4C93);
+          case 3:
+          case 2:
+            return const Color(0xFF1982C4);
+          default:
+            return const Color(0xFF8AC926);
+        }
+      },
+      kyu: (level) {
+        if (level <= 3) {
+          return const Color(0xFF52B788);
+        } else if (level <= 10) {
+          return const Color(0xFF74C69D);
+        } else {
+          return const Color(0xFFB7E4C7);
+        }
+      },
     );
   }
 }
 
-/// Widget showing comparison between two ranks
+/// Displays rank comparison between two players
 class ShogiRankComparison extends StatelessWidget {
-  final String rank1String;
   final String player1Name;
-  final String rank2String;
+  final ShogiRank player1Rank;
   final String player2Name;
+  final ShogiRank player2Rank;
 
   const ShogiRankComparison({
     Key? key,
-    required this.rank1String,
     required this.player1Name,
-    required this.rank2String,
+    required this.player1Rank,
     required this.player2Name,
+    required this.player2Rank,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final rank1 = ShogiRankService.parseRank(rank1String);
-    final rank2 = ShogiRankService.parseRank(rank2String);
-    final comparison = ShogiRankService.compareRanks(rank1, rank2);
-    final theme = Theme.of(context);
-
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 player1Name,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall,
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8.0),
+              const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12.0,
-                  vertical: 8.0,
-                ),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _getRankColor(rank1).withOpacity(0.2),
-                  border: Border.all(color: _getRankColor(rank1)),
-                  borderRadius: BorderRadius.circular(8.0),
+                  color: Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  rank1String,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: _getRankColor(rank1),
-                  ),
+                child: Column(
+                  children: [
+                    Text(
+                      ShogiRankService.displayName(player1Rank),
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ShogiRankService.getDescription(player1Rank),
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                comparison < 0
-                    ? Icons.arrow_downward
-                    : comparison > 0
-                        ? Icons.arrow_upward
-                        : Icons.drag_handle,
-                size: 24,
-                color: comparison < 0
-                    ? Colors.red
-                    : comparison > 0
-                        ? Colors.green
-                        : Colors.grey,
-              ),
-            ],
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            'vs',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
         Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 player2Name,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall,
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8.0),
+              const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12.0,
-                  vertical: 8.0,
-                ),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _getRankColor(rank2).withOpacity(0.2),
-                  border: Border.all(color: _getRankColor(rank2)),
-                  borderRadius: BorderRadius.circular(8.0),
+                  color: Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  rank2String,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: _getRankColor(rank2),
-                  ),
+                child: Column(
+                  children: [
+                    Text(
+                      ShogiRankService.displayName(player2Rank),
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ShogiRankService.getDescription(player2Rank),
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -310,28 +310,5 @@ class ShogiRankComparison extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  Color _getRankColor(ShogiRank rank) {
-    if (rank is _KyuRank) {
-      return switch ((rank as _KyuRank).level) {
-        1 => const Color(0xFF4CAF50),
-        <= 5 => const Color(0xFF66BB6A),
-        <= 10 => const Color(0xFF81C784),
-        <= 15 => const Color(0xFFA5D6A7),
-        _ => const Color(0xFFC8E6C9),
-      };
-    } else {
-      return switch ((rank as _DanRank).level) {
-        1 => const Color(0xFF2196F3),
-        2 => const Color(0xFF42A5F5),
-        3 => const Color(0xFF64B5F6),
-        4 => const Color(0xFF7E57C2),
-        5 => const Color(0xFF9575CD),
-        6 => const Color(0xFFFFB300),
-        7 => const Color(0xFFFFC107),
-        _ => const Color(0xFFFF6F00),
-      };
-    }
   }
 }
