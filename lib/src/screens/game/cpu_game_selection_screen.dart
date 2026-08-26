@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/ai_opponent_engine.dart';
 import '../../utils/animations.dart';
 import 'cpu_game_screen.dart';
 
@@ -10,8 +11,14 @@ class CPUGameSelectionScreen extends StatefulWidget {
 }
 
 class _CPUGameSelectionScreenState extends State<CPUGameSelectionScreen> {
-  String _selectedDifficulty = 'medium';
-  String _selectedTimeControl = '5+3';
+  late AIDifficulty _selectedDifficulty;
+  bool _playerIsWhite = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDifficulty = AIDifficulty.medium;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,22 +39,22 @@ class _CPUGameSelectionScreenState extends State<CPUGameSelectionScreen> {
                 Text(
                   'Select Difficulty',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 _buildDifficultyOptions(),
                 const SizedBox(height: 32),
 
-                // Time control section
+                // Player color section
                 Text(
-                  'Select Time Control',
+                  'Select Your Color',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                _buildTimeControlOptions(),
+                _buildColorOptions(),
                 const SizedBox(height: 48),
 
                 // Start button
@@ -74,29 +81,20 @@ class _CPUGameSelectionScreenState extends State<CPUGameSelectionScreen> {
   }
 
   Widget _buildDifficultyOptions() {
-    const difficulties = [
-      ('Easy', 'Perfect for learning', Icons.psychology_alt, 'easy'),
-      ('Medium', 'Balanced gameplay', Icons.trending_up, 'medium'),
-      ('Hard', 'Challenging opponent', Icons.star, 'hard'),
-    ];
-
     return Column(
       children: [
-        ...difficulties.asMap().entries.map((entry) {
+        ...AIDifficulty.values.asMap().entries.map((entry) {
           final index = entry.key;
-          final (title, description, icon, value) = entry.value;
+          final difficulty = entry.value;
           return SlideInAnimation(
             direction: SlideDirection.left,
             delay: Duration(milliseconds: index * 100),
             child: Column(
               children: [
                 _buildDifficultyCard(
-                  title: title,
-                  description: description,
-                  icon: icon as IconData,
-                  value: value,
+                  difficulty: difficulty,
                 ),
-                if (index < difficulties.length - 1)
+                if (index < AIDifficulty.values.length - 1)
                   const SizedBox(height: 12),
               ],
             ),
@@ -107,15 +105,17 @@ class _CPUGameSelectionScreenState extends State<CPUGameSelectionScreen> {
   }
 
   Widget _buildDifficultyCard({
-    required String title,
-    required String description,
-    required IconData icon,
-    required String value,
+    required AIDifficulty difficulty,
   }) {
-    final isSelected = _selectedDifficulty == value;
+    final isSelected = _selectedDifficulty == difficulty;
+    final Icon icon = difficulty == AIDifficulty.easy
+        ? const Icon(Icons.psychology_alt)
+        : difficulty == AIDifficulty.medium
+            ? const Icon(Icons.trending_up)
+            : const Icon(Icons.star);
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedDifficulty = value),
+      onTap: () => setState(() => _selectedDifficulty = difficulty),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -135,7 +135,7 @@ class _CPUGameSelectionScreenState extends State<CPUGameSelectionScreen> {
                 color: Colors.blue.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: Colors.blue),
+              child: icon,
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -143,7 +143,7 @@ class _CPUGameSelectionScreenState extends State<CPUGameSelectionScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    difficulty.displayName,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -151,7 +151,7 @@ class _CPUGameSelectionScreenState extends State<CPUGameSelectionScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    description,
+                    difficulty.description,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,
@@ -180,42 +180,79 @@ class _CPUGameSelectionScreenState extends State<CPUGameSelectionScreen> {
     );
   }
 
-  Widget _buildTimeControlOptions() {
-    return Column(
+  Widget _buildColorOptions() {
+    return Row(
       children: [
-        const Text(
-          'Blitz Format (minutes + increment)',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: _buildColorCard(
+            color: 'White',
+            isSelected: _playerIsWhite,
+            onTap: () => setState(() => _playerIsWhite = true),
           ),
         ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: ['1+0', '3+0', '3+2', '5+3', '10+5', '15+10']
-              .map((tc) => _buildTimeControlChip(tc))
-              .toList(),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildColorCard(
+            color: 'Black',
+            isSelected: !_playerIsWhite,
+            onTap: () => setState(() => _playerIsWhite = false),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildTimeControlChip(String timeControl) {
-    final isSelected = _selectedTimeControl == timeControl;
-
-    return FilterChip(
-      label: Text(timeControl),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() => _selectedTimeControl = timeControl);
-      },
-      backgroundColor: isSelected ? Colors.blue : Colors.grey.shade200,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+  Widget _buildColorCard({
+    required String color,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? Colors.blue : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? Colors.blue.withOpacity(0.05) : Colors.transparent,
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: color == 'White' ? Colors.grey.shade300 : Colors.grey.shade800,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey.shade600,
+                  width: 2,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              color,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            if (isSelected)
+              const Text(
+                '✓ Selected',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -225,7 +262,7 @@ class _CPUGameSelectionScreenState extends State<CPUGameSelectionScreen> {
       SmoothPageTransition(
         page: CPUGameScreen(
           difficulty: _selectedDifficulty,
-          timeControl: _selectedTimeControl,
+          playerIsWhite: _playerIsWhite,
         ),
       ),
     );
