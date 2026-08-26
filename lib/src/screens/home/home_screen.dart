@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../utils/animations.dart';
 import '../puzzle/puzzle_screen.dart';
 import '../settings/settings_screen.dart';
@@ -9,6 +10,8 @@ import '../profile/profile_screen.dart';
 import '../game/matchmaking_screen.dart';
 import '../game/cpu_game_selection_screen.dart';
 import '../premium/premium_screen.dart';
+import '../notifications_screen.dart';
+import '../leaderboard_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -18,6 +21,62 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  Widget _buildNotificationButton(
+    BuildContext context,
+    AsyncValue<UserModel?> userAsync,
+  ) {
+    return userAsync.when(
+      loading: () => const SizedBox(),
+      error: (_, __) => const SizedBox(),
+      data: (user) {
+        if (user == null) return const SizedBox();
+
+        return Consumer(
+          builder: (context, ref, _) {
+            final unreadCount = ref.watch(unreadNotificationsCountProvider);
+
+            return Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      SmoothPageTransition(page: const NotificationsScreen()),
+                    );
+                  },
+                  tooltip: 'Notifications',
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(authStateNotifierProvider);
@@ -51,6 +110,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             centerTitle: true,
             elevation: 0,
             actions: [
+              _buildNotificationButton(context, userAsync),
+              IconButton(
+                icon: const Icon(Icons.leaderboard_outlined),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    SmoothPageTransition(page: const LeaderboardScreen()),
+                  );
+                },
+                tooltip: 'Leaderboard',
+              ),
               IconButton(
                 icon: const Icon(Icons.star_outline),
                 onPressed: () {
