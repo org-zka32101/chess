@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:chess/chess.dart' as chess_lib;
 import '../models/game.dart';
+import '../models/cpu_game_state.dart';
 import '../services/chess_engine_service.dart';
+import '../services/ai_opponent_engine.dart';
 
 /// CPU game state
 class CPUGameState {
@@ -399,4 +402,210 @@ final cpuGameStreamProvider =
     }
     return null;
   });
+});
+
+// ============================================================================
+// NEW: Simple State-Based CPU Game Provider (for offline play)
+// ============================================================================
+
+/// Game state notifier for CPU play (local state)
+class CpuGameNotifier extends StateNotifier<CpuGameState> {
+  late ChessEngineService _chess;
+  late AIOpponentEngine _aiEngine;
+
+  CpuGameNotifier()
+      : super(
+          CpuGameState(
+            gameState: chess_lib.Chess(),
+            difficulty: AIDifficulty.medium,
+            startTime: DateTime.now(),
+            playerIsWhite: true,
+          ),
+        ) {
+    _chess = ChessEngineService();
+    _aiEngine = AIOpponentEngine(_chess, state.difficulty);
+  }
+
+  /// Initialize a new game
+  void initGame({
+    AIDifficulty difficulty = AIDifficulty.medium,
+    bool playerIsWhite = true,
+  }) {
+    _chess.initGame();
+    _aiEngine = AIOpponentEngine(_chess, difficulty);
+
+    state = CpuGameState(
+      gameState: _chess._chess,
+      difficulty: difficulty,
+      moves: [],
+      startTime: DateTime.now(),
+      playerIsWhite: playerIsWhite,
+    );
+  }
+
+  /// Make a player move
+  void makePlayerMove(String from, String to, {String? promotion}) {
+    if (!state.isPlayerTurn || state.isGameOver) return;
+
+    final success = _chess.makeMove(from, to, promotion: promotion);
+    if (!success) return;
+
+    final newMoves = List<chess_lib.Move>.from(state.moves);
+    final allMoves = _chess.getLegalMoves();
+    if (allMoves.isNotEmpty) {
+      // Get the last move from legal moves (the one we just made)
+      final lastMove = allMoves.where((m) =>
+          m.fromAlgebraic == from &&
+          m.toAlgebraic == to).firstOrNull;
+      if (lastMove != null) {
+        newMoves.add(lastMove);
+      }
+    }
+
+    _updateGameState(newMoves);
+
+    // Check if game is over after player move
+    if (_isGameOver()) {
+      _endGame();
+    }
+  }
+
+  /// Request AI to make a move
+  Future<void> makeAIMove() async {
+    if (state.isPlayerTurn || state.isGameOver || state.isAIThinking) return;
+
+    state = state.copyWith(isAIThinking: true);
+
+    // Get best move from AI
+    final bestMove = _aiEngine.getBestMove();
+    if (bestMove == null) {
+      _endGame();
+      state = state.copyWith(isAIThinking: false);
+      return;
+    }
+
+    // Apply the move
+    _chess.makeMoveUCI(bestMove);
+    final newMoves = List<chess_lib.Move>.from(state.moves);
+    final allMoves = _chess.getLegalMoves();
+    if (allMoves.isNotEmpty) {
+      // Find the move we just made
+      final parts = bestMove.split('');
+      if (parts.length >= 4) {
+        final from = bestMove.substring(0, 2);
+        final to = bestMove.substring(2, 4);
+        final lastMove = allMoves.where((m) =>
+            m.fromAlgebraic == from &&
+            m.toAlgebraic == to).firstOrNull;
+        if (lastMove != null) {
+          newMoves.add(lastMove);
+        }
+      }
+    }
+
+    _updateGameState(newMoves);
+    state = state.copyWith(isAIThinking: false);
+
+    // Check if game is over after AI move
+    if (_isGameOver()) {
+      _endGame();
+    }
+  }
+
+  /// Undo the last move
+  void undoMove() {
+    if (state.moves.isEmpty || state.isGameOver) return;
+
+    _chess.undoMove();
+    if (state.moves.isNotEmpty) {
+      _chess.undoMove(); // Undo both player and AI move
+    }
+
+    final newMoves = state.moves.length >= 2
+        ? state.moves.sublist(0, state.moves.length - 2)
+        : [];
+
+    _updateGameState(newMoves);
+  }
+
+  /// Resign the game
+  void resign() {
+    if (state.isGameOver) return;
+
+    final result = state.playerIsWhite ? 'black_win' : 'white_win';
+    state = state.copyWith(
+      isGameOver: true,
+      result: result,
+      endReason: 'resignation',
+      endTime: DateTime.now(),
+    );
+  }
+
+  /// Offer a draw (simplified - auto-accept)
+  void offerDraw() {
+    if (state.isGameOver) return;
+
+    state = state.copyWith(
+      isGameOver: true,
+      result: 'draw',
+      endReason: 'draw_agreement',
+      endTime: DateTime.now(),
+    );
+  }
+
+  /// Reset the game
+  void reset() {
+    _chess.reset();
+    _aiEngine = AIOpponentEngine(_chess, state.difficulty);
+
+    state = CpuGameState(
+      gameState: _chess._chess,
+      difficulty: state.difficulty,
+      moves: [],
+      startTime: DateTime.now(),
+      playerIsWhite: state.playerIsWhite,
+    );
+  }
+
+  /// Helper: Update game state after a move
+  void _updateGameState(List<chess_lib.Move> newMoves) {
+    state = state.copyWith(
+      gameState: _chess._chess,
+      moves: newMoves,
+    );
+  }
+
+  /// Helper: Check if game is over
+  bool _isGameOver() {
+    if (_chess.isCheckmate()) return true;
+    if (_chess.isStalemate()) return true;
+    return false;
+  }
+
+  /// Helper: End the game and determine result
+  void _endGame() {
+    String? result;
+    String? endReason;
+
+    if (_chess.isCheckmate()) {
+      endReason = 'checkmate';
+      result = _chess.isWhiteTurn() ? 'black_win' : 'white_win';
+    } else if (_chess.isStalemate()) {
+      endReason = 'stalemate';
+      result = 'draw';
+    }
+
+    state = state.copyWith(
+      isGameOver: true,
+      result: result,
+      endReason: endReason,
+      endTime: DateTime.now(),
+    );
+  }
+}
+
+/// Riverpod provider for CPU game state (local/offline play)
+final cpuGameProvider =
+    StateNotifierProvider<CpuGameNotifier, CpuGameState>((ref) {
+  return CpuGameNotifier();
 });
