@@ -1,0 +1,138 @@
+{
+  "app_info": {
+    "app_name": "Chess Tactics Master",
+    "subtitle": "Learn Chess Through Puzzles",
+    "category": "Games > Puzzle",
+    "bundle_id": "com.yourwish.chess",
+    "version": "1.0.0",
+    "build_number": "1"
+  },
+
+  "ios_app_store": {
+    "title": "Chess Tactics Master",
+    "subtitle": "Learn Chess Through Puzzles",
+    "description": "Master chess tactics and improve your game with Chess Tactics Master!\n\n✨ FEATURES\n\n🎯 Tactical Puzzles\nSolve 1000+ puzzles ranging from beginner to advanced levels. Improve your tactical vision and decision-making skills.\n\n🤖 CPU Opponents\nChallenge multiple AI difficulty levels and see how your rating compares.\n\n🌍 Online Multiplayer\nPlay real-time matches against players worldwide with our dynamic ELO rating system. Climb the leaderboards and earn achievements.\n\n📊 Rating System\nTrack your progress with our comprehensive ELO rating system. See how you stack up against other players globally.\n\n📱 Customization\nChoose from multiple board themes, piece styles, and app themes including dark mode.\n\n🔔 Real-time Notifications\nGet instant updates on match invitations, game turns, and achievements.\n\n⭐ Premium Features\nUnlock unlimited puzzles, advanced analysis tools, and ad-free experience with our subscription plans.\n\n🏆 Achievements & Leaderboards\nUnlock achievements and compete on global leaderboards for different game types.\n\n📖 Educational\nLearn chess fundamentals through interactive tutorials and guided puzzles.\n\nWHETHER YOU'RE A BEGINNER OR AN EXPERIENCED PLAYER, CHESS TACTICS MASTER HELPS YOU IMPROVE YOUR GAME ONE PUZZLE AT A TIME.\n\nFREE TO DOWNLOAD with optional in-app purchases for premium features.\n\nQuestions? Contact us at support@chessmaster.app",
+
+    "keywords": "chess, tactics, puzzles, online, multiplayer, board game, strategy, rating, learning",
+
+    "support_url": "https://chessmaster.app/support",
+    "privacy_url": "https://chessmaster.app/privacy",
+    "terms_url": "https://chessmaster.app/terms",
+
+    "support_email": "support@chessmaster.app",
+
+    "rating": "4+",
+    "content_rating": {
+      "violence": false,
+      "profanity": false,
+      "gambling": false,
+      "alcohol_tobacco": false,
+      "sexual_content": false
+    },
+
+    "screenshot_sets": {
+      "iphone_5_5_inch": {
+        "count": 6,
+        "screenshots": [
+          {
+            "file": "screenshots/ios/iPhone_5_5/1_home.png",
+            "description": "Master chess tactics with our comprehensive puzzle library"
+          },
+          {
+            "file": "screenshots/ios/iPhone_5_5/2_puzzle.png",
+            "description": "Solve tactical puzzles and improve your skills"
+          },
+          {
+            "file": "screenshots/ios/iPhone_5_5/3_online.png",
+            "description": "Play real-time matches against players worldwide"
+          },
+          {
+            "file": "screenshots/ios/iPhone_5_5/4_game.png",
+            "description": "Engage in exciting multiplayer games"
+          },
+          {
+            "file": "screenshots/ios/iPhone_5_5/5_leaderboard.png",
+            "description": "Compete on global leaderboards"
+          },
+          {
+            "file": "screenshots/ios/iPhone_5_5/6_dark_mode.png",
+            "description": "Beautiful dark mode support"
+          }
+        ]
+      },
+      "ipad_12_9": {
+        "count": 6,
+        "screenshots": [
+          {
+            "file": "screenshots/ios/iPad_12_9/1_home.png",
+            "description": "Master chess tactics with our comprehensive puzzle library"
+          },
+          {
+            "file": "screenshots/ios/iPad_12_9/2_puzzle.png",
+            "description": "Solve tactical puzzles on large screen"
+          },
+          {
+            "file": "screenshots/ios/iPad_12_9/3_online.png",
+            "description": "Play real-time matches against players worldwide"
+          },
+          {
+            "file": "screenshots/ios/iPad_12_9/4_game.png",
+            "description": "Immersive gameplay experience"
+          },
+          {
+            "file": "screenshots/ios/iPad_12_9/5_leaderboard.png",
+            "description": "View rankings and statistics"
+          },
+          {
+            "file": "screenshots/ios/iPad_12_9/6_settings.png",
+            "description": "Customize your experience"
+          }
+        ]
+      }
+    },
+
+    "app_icon": {
+      "file": "assets/app_icons/ios/AppIcon-1024.png",
+      "size": "1024x1024"
+    },
+
+    "preview_video": {
+      "file": "assets/videos/app_preview.mov",
+      "duration": 30
+    }
+  },
+
+  "privacy": {
+    "categories": {
+      "contact_info": {
+        "email_address": true,
+        "name": true,
+        "purpose": "Account management and support"
+      },
+      "identifiers": {
+        "user_id": true,
+        "device_id": true,
+        "purpose": "App functionality and analytics"
+      },
+      "usage_data": {
+        "crash_data": true,
+        "performance_data": true,
+        "diagnostics": true,
+        "purpose": "App stability and performance monitoring"
+      },
+      "analytics": {
+        "gameplay_events": true,
+        "feature_usage": true,
+        "purpose": "Understanding user behavior and improving features"
+      }
+    },
+    "tracking": {
+      "enabled": false,
+      "purpose": "Optional telemetry"
+    }
+  },
+
+  "review_notes": "This is a chess tactics learning application with online multiplayer features. No external web browsing required. All features work without internet except online multiplayer. Privacy policy available in-app.",
+
+  "version_release_notes": "🎉 Chess Tactics Master 1.0.0 - Initial Release\n\n✨ Launch Features:\n• 1000+ tactical puzzles\n• CPU play with adjustable difficulty\n• Real-time online multiplayer\n• ELO rating system\n• Material 3 dark mode\n• Real-time notifications\n• Player leaderboards\n• Game replay system\n• Three-tier subscription\n\n📋 Requirements:\n• iOS 14.0 or later\n• Internet connection for online features\n\nEnjoy and help us improve! Email: support@chessmaster.app"
+}
