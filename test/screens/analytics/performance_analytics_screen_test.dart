@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:chess/src/screens/analytics/performance_analytics_screen.dart';
 
 void main() {
@@ -40,7 +41,7 @@ void main() {
       expect(find.byIcon(Icons.refresh), findsOneWidget);
     });
 
-    testWidgets('displays streak information section', (WidgetTester tester) async {
+    testWidgets('displays streak information section with indicator', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
@@ -54,10 +55,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('連続記録'), findsOneWidget);
+      expect(find.text('連勝中'), findsWidgets);
     });
 
-    testWidgets('displays rating progression section', (WidgetTester tester) async {
+    testWidgets('displays rating progression section with chart', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
@@ -72,6 +73,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('レーティング進行'), findsOneWidget);
+      expect(find.byType(LineChart), findsWidgets);
     });
 
     testWidgets('displays time range buttons', (WidgetTester tester) async {

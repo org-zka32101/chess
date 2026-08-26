@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chess/src/providers/match_history_provider.dart';
+import 'package:chess/src/widgets/animations/chart_entrance_animation.dart';
 
 /// Screen for displaying match history with filtering and pagination
 class MatchHistoryScreen extends ConsumerWidget {
@@ -103,7 +104,12 @@ class MatchHistoryScreen extends ConsumerWidget {
                     }
 
                     final match = state.matches[index];
-                    return _buildMatchCard(context, match);
+                    return ChartEntranceAnimation(
+                      duration: Duration(
+                        milliseconds: 300 + (index * 50).clamp(0, 500),
+                      ),
+                      child: _buildMatchCard(context, match),
+                    );
                   },
                 ),
         ),
