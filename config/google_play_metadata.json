@@ -1,0 +1,206 @@
+{
+  "app_info": {
+    "app_name": "Chess Tactics Master",
+    "package_name": "com.yourwish.chess",
+    "version": "1.0.0",
+    "version_code": "1",
+    "content_rating": "Everyone"
+  },
+
+  "google_play_store": {
+    "title": "Chess Tactics Master",
+    "short_description": "Master chess tactics with 1000+ puzzles and online multiplayer",
+    "full_description": "Master chess tactics and improve your game with Chess Tactics Master!\n\n✨ FEATURES\n\n🎯 Tactical Puzzles\nSolve 1000+ puzzles ranging from beginner to advanced levels. Improve your tactical vision and decision-making skills with our comprehensive puzzle library.\n\n🤖 CPU Opponents\nChallenge AI opponents at multiple difficulty levels. From beginner to expert difficulty, find the right challenge for you.\n\n🌍 Online Multiplayer\nPlay real-time chess matches against players worldwide. Our dynamic ELO rating system ensures fair matchmaking. Climb the global leaderboards and prove your skill!\n\n📊 Rating System\nTrack your progress with our comprehensive ELO rating system. See how you stack up against other players globally and watch your rating improve.\n\n📱 Complete Customization\n• Multiple board themes (default, wooden, marble)\n• Piece style options (default, wooden, classic)\n• Light and dark mode support\n• Adjustable board size\n• Board coordinate display\n\n🔔 Real-time Notifications\nGet instant updates on:\n• Match invitations from other players\n• Game turns in active matches\n• Game completion notifications\n• Achievement unlocks\n• Rating changes\n\n⭐ Premium Subscription\nUnlock premium features:\n• Unlimited puzzle access\n• Custom board themes\n• Advanced game analysis\n• Ad-free experience\n• Offline mode\n• Cloud synchronization\n• Opening books\n• Endgame tablebases\n\n🏆 Achievements & Leaderboards\n• Unlock 20+ achievements\n• Global leaderboards by rating\n• Weekly rankings\n• Monthly challenges\n• Time control rankings (Blitz, Rapid, Classical)\n\n📖 Educational Content\n• Learn chess fundamentals\n• Interactive tutorials\n• Guided puzzle sequences\n• Strategic concepts\n• Tactical patterns\n\n🎓 Perfect For\n• Beginners learning chess basics\n• Intermediate players improving tactics\n• Advanced players seeking competition\n• Chess enthusiasts worldwide\n\nWHETHER YOU'RE PICKING UP CHESS FOR THE FIRST TIME OR YOU'RE AN EXPERIENCED PLAYER, CHESS TACTICS MASTER HELPS YOU IMPROVE YOUR GAME ONE PUZZLE AT A TIME.\n\n🚀 WHY CHESS TACTICS MASTER?\n\n✓ Intelligent matching system\n✓ Zero lag real-time sync\n✓ Fair rating calculations\n✓ Comprehensive statistics\n✓ Beautiful, intuitive UI\n✓ Regular updates and new puzzles\n✓ Active community support\n✓ Privacy-first approach\n\nFREE TO DOWNLOAD with optional in-app purchases for premium features. Play free chess, subscribe for premium benefits!\n\nQuestions or suggestions? We'd love to hear from you!\n📧 Email: support@chessmaster.app\n🌐 Website: https://chessmaster.app\n📱 Social: @ChessMasterApp\n\n--- PERMISSIONS ---\n\nInternet: Required for online multiplayer and cloud sync\nCamera/Photos: Optional for profile photos (only with your permission)\nContacts: Optional for finding friends (only with your permission)\n\nWe respect your privacy. No data is shared without consent.",
+
+    "category": "GAME_PUZZLE",
+    "content_rating": "EVERYONE",
+    "target_audience": "Not primarily for kids",
+
+    "short_keywords": "chess, tactics, puzzles, online, multiplayer, strategy, board game, ELO, rating",
+
+    "full_keywords": [
+      "chess",
+      "chess tactics",
+      "chess puzzles",
+      "chess strategy",
+      "online chess",
+      "multiplayer chess",
+      "chess learning",
+      "chess training",
+      "chess rating",
+      "ELO",
+      "board game",
+      "strategy game",
+      "chess game",
+      "chess master",
+      "chess tactics trainer",
+      "puzzle game"
+    ],
+
+    "support_email": "support@chessmaster.app",
+    "support_website": "https://chessmaster.app/support",
+    "privacy_policy": "https://chessmaster.app/privacy",
+    "terms_of_service": "https://chessmaster.app/terms",
+
+    "feature_graphic": {
+      "file": "assets/google_play/feature_graphic_1024x500.png",
+      "dimensions": "1024x500"
+    },
+
+    "icon": {
+      "file": "assets/app_icons/android/ic_launcher_512.png",
+      "dimensions": "512x512"
+    },
+
+    "screenshots": {
+      "phone": {
+        "count": 8,
+        "min": 4,
+        "max": 8,
+        "dimensions": "1080x1920",
+        "screenshots": [
+          {
+            "file": "screenshots/android/phone/1_home.png",
+            "description": "Master chess tactics with our comprehensive puzzle library"
+          },
+          {
+            "file": "screenshots/android/phone/2_puzzle_solving.png",
+            "description": "Solve tactical puzzles and improve your skills"
+          },
+          {
+            "file": "screenshots/android/phone/3_puzzle_solution.png",
+            "description": "Learn from detailed puzzle solutions"
+          },
+          {
+            "file": "screenshots/android/phone/4_matchmaking.png",
+            "description": "Find opponents for real-time online matches"
+          },
+          {
+            "file": "screenshots/android/phone/5_online_game.png",
+            "description": "Play engaging multiplayer games"
+          },
+          {
+            "file": "screenshots/android/phone/6_game_result.png",
+            "description": "Track rating changes and game statistics"
+          },
+          {
+            "file": "screenshots/android/phone/7_leaderboard.png",
+            "description": "Compete on global leaderboards"
+          },
+          {
+            "file": "screenshots/android/phone/8_dark_mode.png",
+            "description": "Beautiful dark mode support"
+          }
+        ]
+      },
+      "tablet": {
+        "count": 4,
+        "dimensions": "1200x1920",
+        "screenshots": [
+          {
+            "file": "screenshots/android/tablet/1_home.png",
+            "description": "Tablet-optimized experience"
+          },
+          {
+            "file": "screenshots/android/tablet/2_puzzle.png",
+            "description": "Large board for tactical training"
+          },
+          {
+            "file": "screenshots/android/tablet/3_game.png",
+            "description": "Immersive multiplayer experience"
+          },
+          {
+            "file": "screenshots/android/tablet/4_stats.png",
+            "description": "Comprehensive statistics"
+          }
+        ]
+      }
+    },
+
+    "preview_video": {
+      "youtubeVideoId": "dQw4w9WgXcQ",
+      "duration": 30
+    }
+  },
+
+  "data_safety": {
+    "data_collection_practices": {
+      "personal_info_collected": true,
+      "personal_info_types": [
+        "Email address",
+        "Name",
+        "User ID"
+      ],
+      "personal_info_shared": false,
+      "personal_info_retention": "Until account deletion"
+    },
+
+    "security_practices": {
+      "data_encrypted_in_transit": true,
+      "encryption_method": "TLS 1.2+",
+      "data_encrypted_at_rest": true,
+      "security_testing": true,
+      "security_testing_type": "Third-party security audit"
+    },
+
+    "authentication": {
+      "password_required": true,
+      "optional_two_factor": false,
+      "session_management": "Secure tokens"
+    },
+
+    "crash_analytics": {
+      "crash_data_collected": true,
+      "crash_data_shared": false,
+      "crash_data_retention": "90 days"
+    },
+
+    "user_generated_content": {
+      "content_policies": true,
+      "content_review": "Automated + manual"
+    }
+  },
+
+  "content_rating_questionnaire": {
+    "violence": "None",
+    "profanity": "None",
+    "sexual_content": "None",
+    "substance_abuse": "None",
+    "mature_themes": "None",
+    "gambling": "No real money gambling",
+    "purchases": "Optional in-app purchases for premium features only"
+  },
+
+  "rollout_strategy": {
+    "initial_rollout": "5%",
+    "phases": [
+      {
+        "percentage": 5,
+        "duration_days": 1
+      },
+      {
+        "percentage": 10,
+        "duration_days": 2
+      },
+      {
+        "percentage": 25,
+        "duration_days": 3
+      },
+      {
+        "percentage": 50,
+        "duration_days": 4
+      },
+      {
+        "percentage": 100,
+        "duration_days": 3
+      }
+    ],
+    "halt_conditions": [
+      "Crash rate > 0.5%",
+      "App rating < 3.5 stars",
+      "ANR rate > 0.1%"
+    ]
+  },
+
+  "version_release_notes": "🎉 Chess Tactics Master 1.0.0 - Initial Release\n\nWe're thrilled to launch Chess Tactics Master! Master chess tactics with our comprehensive puzzle library and challenge players worldwide in real-time multiplayer matches.\n\n✨ Launch Features:\n• 1000+ tactical puzzles (beginner to master level)\n• CPU opponents with adjustable difficulty\n• Real-time online multiplayer with live opponents\n• Dynamic ELO rating system for fair matchmaking\n• Material 3 dark mode support\n• Real-time push notifications\n• Global player leaderboards\n• Game replay and analysis\n• Three-tier subscription model\n• 20+ achievements to unlock\n\n🚀 Performance Optimizations:\n• Lightning-fast move processing (<0.5ms)\n• Smooth 60fps gameplay\n• Low memory footprint\n• Battery-efficient\n\n📋 Requirements:\n• Android 7.0 (API 24) or later\n• Internet connection for online features\n• 150MB available storage\n\n🙏 Thank you for downloading Chess Tactics Master!\nHelp us improve: support@chessmaster.app"
+}
