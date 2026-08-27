@@ -52,6 +52,7 @@ dependencies:
   intl: ^0.18.0
   logger: ^2.0.0
   dio: ^5.3.0
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +68,7 @@ flutter:
 
   # Assets
   assets:
+    - .env
     - assets/images/
     - assets/lottie/
     - assets/data/puzzles.db
