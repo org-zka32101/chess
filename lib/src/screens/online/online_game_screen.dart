@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:chess/chess.dart' as chess_lib;
 import 'package:chess/src/models/online_game.dart';
 import 'package:chess/src/providers/online_game_provider.dart';
+import 'package:chess/src/widgets/game_board.dart';
+import 'package:chess/src/utils/animations.dart';
+import 'package:chess/src/services/sound_service.dart';
 
 /// Screen for playing online multiplayer chess games
 class OnlineGameScreen extends ConsumerStatefulWidget {
@@ -51,6 +55,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
   /// Build main game board layout
   Widget _buildGameBoard(BuildContext context, OnlineGame game) {
     final isBoardActive = game.status == 'active';
+    final isPlayerTurn = _isCurrentPlayerTurn(game);
 
     return Column(
       children: [
@@ -70,28 +75,9 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
 
         const Divider(height: 1),
 
-        // Chess Board (would integrate with existing board UI)
+        // Chess Board with GameBoard widget
         Expanded(
-          child: Container(
-            color: Colors.grey[100],
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Chess Board\n(FEN: ${game.currentFen})',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Moves: ${game.moves.length}',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          child: _buildChessBoardWidget(context, game, isPlayerTurn),
         ),
 
         const Divider(height: 1),
@@ -114,6 +100,48 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
         if (isBoardActive) _buildGameActions(context, game),
       ],
     );
+  }
+
+  /// Build chess board widget from game state
+  Widget _buildChessBoardWidget(
+    BuildContext context,
+    OnlineGame game,
+    bool isPlayerTurn,
+  ) {
+    try {
+      final gameState = chess_lib.Chess.fromFEN(game.currentFen);
+
+      return SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: GameBoard(
+            gameState: gameState,
+            moveHistory: game.moves.isNotEmpty
+                ? game.moves
+                    .map((move) => chess_lib.Move(from: move.from, to: move.to))
+                    .toList()
+                : [],
+            onMove: isPlayerTurn && game.status == 'active'
+                ? (from, to, {promotion}) => _submitMove(game, from, to)
+                : null,
+            onResign: game.status == 'active' ? () => _resign(game) : null,
+            showMaterial: true,
+            isPlayerTurn: isPlayerTurn && game.status == 'active',
+          ),
+        ),
+      );
+    } catch (e) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+            const SizedBox(height: 16),
+            Text('Error loading board: $e'),
+          ],
+        ),
+      );
+    }
   }
 
   /// Build player information widget (name, rating, time)
@@ -455,5 +483,69 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
   String _getCurrentPlayerId() {
     final auth = ref.read(firebaseAuthProvider).value;
     return auth?.uid ?? '';
+  }
+
+  /// Check if it's the current player's turn
+  bool _isCurrentPlayerTurn(OnlineGame game) {
+    try {
+      final gameState = chess_lib.Chess.fromFEN(game.currentFen);
+      final currentPlayerId = _getCurrentPlayerId();
+      final isWhitePlayer = game.whitePlayerId == currentPlayerId;
+
+      // Determine whose turn it is based on chess state
+      final isWhiteTurn = gameState.turn == chess_lib.Color.WHITE;
+
+      return isWhitePlayer == isWhiteTurn;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Submit a move to the game
+  Future<void> _submitMove(OnlineGame game, String from, String to) async {
+    try {
+      // Validate move is legal
+      final gameState = chess_lib.Chess.fromFEN(game.currentFen);
+      final moveResult = gameState.move({'from': from, 'to': to});
+
+      if (moveResult == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invalid move')),
+          );
+        }
+        return;
+      }
+
+      // Record move in backend
+      final notifier = ref.read(onlineGameNotifierProvider.notifier);
+      final currentPlayerId = _getCurrentPlayerId();
+
+      await notifier.recordMove(
+        gameId: _gameId,
+        moveNumber: game.moves.length + 1,
+        from: from,
+        to: to,
+        playerId: currentPlayerId,
+        updatedFen: gameState.fen,
+        updatedPgn: gameState.pgn,
+      );
+
+      // Play move sound
+      final soundService = ref.read(soundServiceProvider);
+      await soundService.play(SoundEffect.movePiece);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Move sent')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error submitting move: $e')),
+        );
+      }
+    }
   }
 }
