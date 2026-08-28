@@ -4,6 +4,8 @@ import 'package:chess/chess.dart' as chess_lib;
 import 'package:chess/src/models/online_game.dart';
 import 'package:chess/src/providers/online_game_provider.dart';
 import 'package:chess/src/widgets/game_board.dart';
+import 'package:chess/src/widgets/time_clock.dart';
+import 'package:chess/src/widgets/game_info_panel.dart';
 import 'package:chess/src/utils/animations.dart';
 import 'package:chess/src/services/sound_service.dart';
 
@@ -56,21 +58,19 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
   Widget _buildGameBoard(BuildContext context, OnlineGame game) {
     final isBoardActive = game.status == 'active';
     final isPlayerTurn = _isCurrentPlayerTurn(game);
+    final isWhitePlayer = game.whitePlayerId == _getCurrentPlayerId();
 
     return Column(
       children: [
-        // Top player info (opponent)
-        _buildPlayerInfo(
-          name: game.whitePlayerId == _getCurrentPlayerId()
-              ? game.blackPlayerName
-              : game.whitePlayerName,
-          rating: game.whitePlayerId == _getCurrentPlayerId()
-              ? game.blackRating
-              : game.whiteRating,
-          timeMs: game.whitePlayerId == _getCurrentPlayerId()
+        // Top player info (opponent) with animated time clock
+        PlayerTimeClock(
+          playerName: isWhitePlayer ? game.blackPlayerName : game.whitePlayerName,
+          rating: isWhitePlayer ? game.blackRating : game.whiteRating,
+          timeMs: isWhitePlayer
               ? game.blackTimeRemainingMs
               : game.whiteTimeRemainingMs,
           isCurrentPlayer: false,
+          onTimeExpired: () => _handleOpponentTimeout(game),
         ),
 
         const Divider(height: 1),
@@ -82,18 +82,16 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
 
         const Divider(height: 1),
 
-        // Bottom player info (self)
-        _buildPlayerInfo(
-          name: game.whitePlayerId == _getCurrentPlayerId()
-              ? game.whitePlayerName
-              : game.blackPlayerName,
-          rating: game.whitePlayerId == _getCurrentPlayerId()
-              ? game.whiteRating
-              : game.blackRating,
-          timeMs: game.whitePlayerId == _getCurrentPlayerId()
+        // Bottom player info (self) with animated time clock
+        PlayerTimeClock(
+          playerName: isWhitePlayer ? game.whitePlayerName : game.blackPlayerName,
+          rating: isWhitePlayer ? game.whiteRating : game.blackRating,
+          timeMs: isWhitePlayer
               ? game.whiteTimeRemainingMs
               : game.blackTimeRemainingMs,
           isCurrentPlayer: true,
+          backgroundColor: Colors.blue[50],
+          onTimeExpired: () => _handlePlayerTimeout(game),
         ),
 
         // Move/Action buttons
@@ -348,35 +346,48 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
     );
   }
 
-  /// Show game info dialog
+  /// Show game info dialog with detailed game metadata
   void _showGameInfo(BuildContext context) {
     final game = ref.read(onlineGameProvider(_gameId)).value;
     if (game == null) return;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Game Info'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.85,
+        builder: (context, scrollController) => ListView(
+          controller: scrollController,
           children: [
-            _buildInfoRow('Game ID', game.gameId),
-            _buildInfoRow('Type', game.type),
-            _buildInfoRow('Status', game.status),
-            _buildInfoRow('Time Control', game.timeControl),
-            _buildInfoRow(
-              'Total Moves',
-              game.moves.length.toString(),
+            Padding(
+              padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+              child: GameInfoPanel(
+                gameId: game.gameId,
+                gameType: game.type,
+                status: game.status,
+                timeControl: game.timeControl,
+                totalMoves: game.moves.length,
+                elapsedSeconds: game.createdAt != null
+                    ? DateTime.now().difference(game.createdAt!).inSeconds
+                    : 0,
+                whitePlayerName: game.whitePlayerName,
+                blackPlayerName: game.blackPlayerName,
+                currentTurn: game.whitePlayerId == _getCurrentPlayerId()
+                    ? (game.moves.length % 2 == 0 ? 'White' : 'Black')
+                    : (game.moves.length % 2 == 0 ? 'Black' : 'White'),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
@@ -499,6 +510,59 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
     } catch (e) {
       return false;
     }
+  }
+
+  /// Handle player timeout
+  Future<void> _handlePlayerTimeout(OnlineGame game) async {
+    if (!mounted) return;
+
+    // Play timeout sound
+    final soundService = ref.read(soundServiceProvider);
+    await soundService.play(SoundEffect.error);
+
+    // Show timeout dialog and resign
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Time Expired'),
+        content: const Text('Your time has expired. The game has been lost.'),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _resign(game);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Handle opponent timeout
+  Future<void> _handleOpponentTimeout(OnlineGame game) async {
+    if (!mounted) return;
+
+    // Play victory sound
+    final soundService = ref.read(soundServiceProvider);
+    await soundService.play(SoundEffect.gameOver);
+
+    // Show victory dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Opponent Timeout'),
+        content: const Text('Your opponent ran out of time. You win!'),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Submit a move to the game
