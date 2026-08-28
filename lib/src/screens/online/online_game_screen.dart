@@ -459,18 +459,59 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
 
   /// Offer draw
   Future<void> _offerDraw(OnlineGame game) async {
-    // TODO: Implement draw offer logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Draw offer sent')),
-    );
+    try {
+      // Play notification sound
+      final soundService = ref.read(soundServiceProvider);
+      await soundService.play(SoundEffect.notification);
+
+      // TODO: Implement actual draw offer logic with backend
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Draw offer sent to opponent'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error offering draw: $e')),
+        );
+      }
+    }
   }
 
   /// Claim draw
   Future<void> _claimDraw(OnlineGame game) async {
-    // TODO: Implement draw claim logic (threefold, 50-move rule)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Draw claimed')),
-    );
+    try {
+      // Validate draw claim eligibility (threefold repetition or 50-move rule)
+      // TODO: Implement draw claim validation logic
+
+      final soundService = ref.read(soundServiceProvider);
+
+      // For now, just show a message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Draw claim validation pending...'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Play success sound if claim would be valid
+      // await soundService.play(SoundEffect.success);
+    } catch (e) {
+      if (mounted) {
+        final soundService = ref.read(soundServiceProvider);
+        await soundService.play(SoundEffect.error);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error claiming draw: $e')),
+        );
+      }
+    }
   }
 
   /// Abandon game
@@ -595,13 +636,33 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
         updatedPgn: gameState.pgn,
       );
 
-      // Play move sound
+      // Play appropriate sound based on move type and game state
       final soundService = ref.read(soundServiceProvider);
-      await soundService.play(SoundEffect.movePiece);
+
+      if (moveResult.flags.contains('c')) {
+        // Capture move
+        await soundService.play(SoundEffect.capture);
+      } else {
+        // Regular move
+        await soundService.play(SoundEffect.movePiece);
+      }
+
+      // Check for check or checkmate
+      if (gameState.in_check) {
+        // Play check sound if opponent king is in check
+        await Future.delayed(const Duration(milliseconds: 200));
+        await soundService.play(SoundEffect.check);
+      }
+
+      if (gameState.in_checkmate) {
+        // Play checkmate sound
+        await Future.delayed(const Duration(milliseconds: 200));
+        await soundService.play(SoundEffect.checkmate);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Move sent')),
+          const SnackBar(content: Text('Move sent'), duration: Duration(milliseconds: 800)),
         );
       }
     } catch (e) {
