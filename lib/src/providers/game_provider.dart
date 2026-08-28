@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game.dart';
 import '../services/error_logging_service.dart';
+import '../services/rating_calculation_service.dart';
 
 final firestoreProvider = Provider((ref) => FirebaseFirestore.instance);
 
@@ -322,13 +323,49 @@ class GameService {
       final whiteRating = gameData['whiteRating'] as int;
       final blackRating = gameData['blackRating'] as int;
 
-      // TODO: Implement ELO rating calculation
-      // For now, just mark the game as rated
+      // Calculate new ratings using ELO system
+      final ratingDeltas = RatingCalculationService.calculateBothPlayersRatingDelta(
+        whiteRating,
+        blackRating,
+        result,
+      );
+
+      final whiteRatingDelta = ratingDeltas['whiteRatingDelta'] ?? 0;
+      final blackRatingDelta = ratingDeltas['blackRatingDelta'] ?? 0;
+
+      final newWhiteRating = whiteRating + whiteRatingDelta;
+      final newBlackRating = blackRating + blackRatingDelta;
+
+      // Update game document with rating information
       await _firestore.collection('games').doc(gameId).update({
         'ratingUpdated': true,
+        'whiteRatingBefore': whiteRating,
+        'whiteRatingAfter': newWhiteRating,
+        'whiteRatingDelta': whiteRatingDelta,
+        'blackRatingBefore': blackRating,
+        'blackRatingAfter': newBlackRating,
+        'blackRatingDelta': blackRatingDelta,
+        'ratingCalculatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Update user rating documents for both players
+      await _firestore.collection('users').doc(whitePlayerId).update({
+        'onlineRating': newWhiteRating,
+        'lastGameRatingDelta': whiteRatingDelta,
+        'lastGameRatedAt': FieldValue.serverTimestamp(),
+      });
+
+      await _firestore.collection('users').doc(blackPlayerId).update({
+        'onlineRating': newBlackRating,
+        'lastGameRatingDelta': blackRatingDelta,
+        'lastGameRatedAt': FieldValue.serverTimestamp(),
+      });
+
+      print('Rating updated - White: $whiteRating→$newWhiteRating (${whiteRatingDelta > 0 ? '+' : ''}$whiteRatingDelta), '
+          'Black: $blackRating→$newBlackRating (${blackRatingDelta > 0 ? '+' : ''}$blackRatingDelta)');
     } catch (e) {
       print('Error updating ratings: $e');
+      rethrow;
     }
   }
 }
