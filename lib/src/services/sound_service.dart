@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_audio/just_audio.dart';
 
 /// Sound effects available in the app
 enum SoundEffect {
@@ -67,21 +68,50 @@ extension SoundEffectExt on SoundEffect {
   }
 }
 
-/// Sound service for managing audio playback
+/// Sound service for managing audio playback with just_audio
 ///
-/// Current implementation is a placeholder that enables/disables sound and logs playback.
-/// To implement actual audio playback:
-/// 1. Add dependency: `flutter pub add just_audio` or `audio_players`
-/// 2. Replace placeholder with actual implementation using AudioPlayer
-/// 3. Ensure sound files are in assets/sounds/ directory in pubspec.yaml
-/// 4. Test on both iOS and Android platforms
+/// Uses audio player pooling per sound effect for efficient resource management.
+/// Supports volume control, sound sequences, and full playback state management.
 class SoundService {
   bool _soundEnabled = true;
+  double _volume = 1.0;
+  bool _initialized = false;
+
+  // Map of sound effects to audio players
+  late final Map<SoundEffect, AudioPlayer> _players;
+
   static final SoundService _instance = SoundService._internal();
 
   SoundService._internal();
 
   factory SoundService() => _instance;
+
+  /// Initialize the sound service by preloading all sound files
+  /// Should be called once during app startup
+  Future<void> initialize() async {
+    if (_initialized) return;
+
+    try {
+      _players = {};
+
+      // Create an audio player for each sound effect
+      for (final effect in SoundEffect.values) {
+        final player = AudioPlayer();
+        await player.setAsset(effect.assetPath);
+        _players[effect] = player;
+      }
+
+      _initialized = true;
+
+      if (kDebugMode) {
+        print('[SOUND] SoundService initialized with ${_players.length} audio players');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SOUND] Error initializing SoundService: $e');
+      }
+    }
+  }
 
   /// Set whether sound is enabled
   void setSoundEnabled(bool enabled) {
@@ -91,25 +121,70 @@ class SoundService {
   /// Get current sound enabled state
   bool get isSoundEnabled => _soundEnabled;
 
-  /// Play a sound effect
-  ///
-  /// Placeholder implementation. To enable actual audio:
-  /// 1. Add audio package (just_audio recommended for performance)
-  /// 2. Load sound file from assetPath
-  /// 3. Play with volume control
+  /// Set global volume (0.0 - 1.0)
+  Future<void> setVolume(double volume) async {
+    _volume = volume.clamp(0.0, 1.0);
+
+    // Apply volume to all players
+    for (final player in _players.values) {
+      await player.setVolume(_volume);
+    }
+  }
+
+  /// Get current global volume
+  double get volume => _volume;
+
+  /// Play a sound effect with global volume
   Future<void> play(SoundEffect sound) async {
-    if (!_soundEnabled) return;
+    if (!_soundEnabled || !_initialized) return;
 
     try {
-      // Placeholder: Log sound play for testing
-      // In production, would load and play: sound.assetPath
-      if (kDebugMode) {
-        print('[SOUND] Playing: ${sound.displayName} (${sound.assetPath})');
+      final player = _players[sound];
+      if (player != null) {
+        await player.seek(Duration.zero);
+        await player.play();
+
+        if (kDebugMode) {
+          print('[SOUND] Playing: ${sound.displayName}');
+        }
       }
-      // TODO: Actual implementation
-      // final player = AudioPlayer();
-      // await player.setAsset(sound.assetPath);
-      // await player.play();
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SOUND] Error playing ${sound.displayName}: $e');
+      }
+    }
+  }
+
+  /// Play a sound with specific volume override
+  Future<void> playWithVolume(SoundEffect sound, double volumeOverride) async {
+    if (!_soundEnabled || !_initialized) return;
+
+    try {
+      final player = _players[sound];
+      if (player != null) {
+        final previousVolume = player.volume;
+
+        // Set temporary volume
+        await player.setVolume(volumeOverride.clamp(0.0, 1.0));
+
+        // Reset position and play
+        await player.seek(Duration.zero);
+        await player.play();
+
+        // Restore original volume after playback completes
+        player.playerStateStream.listen(
+          (state) {
+            if (state.processingState == ProcessingState.completed) {
+              player.setVolume(previousVolume);
+            }
+          },
+          onError: (e) => player.setVolume(previousVolume),
+        );
+
+        if (kDebugMode) {
+          print('[SOUND] Playing: ${sound.displayName} (volume: ${volumeOverride.toStringAsFixed(2)})');
+        }
+      }
     } catch (e) {
       if (kDebugMode) {
         print('[SOUND] Error playing ${sound.displayName}: $e');
@@ -118,23 +193,69 @@ class SoundService {
   }
 
   /// Play multiple sounds in sequence
-  Future<void> playSequence(List<SoundEffect> sounds) async {
-    for (final sound in sounds) {
-      await play(sound);
-      await Future.delayed(const Duration(milliseconds: 100));
+  Future<void> playSequence(
+    List<SoundEffect> sounds, {
+    Duration delayBetween = const Duration(milliseconds: 100),
+  }) async {
+    for (int i = 0; i < sounds.length; i++) {
+      await play(sounds[i]);
+
+      // Wait before playing next sound (except for the last one)
+      if (i < sounds.length - 1) {
+        await Future.delayed(delayBetween);
+      }
+    }
+  }
+
+  /// Pause all sounds
+  Future<void> pauseAll() async {
+    try {
+      for (final player in _players.values) {
+        await player.pause();
+      }
+
+      if (kDebugMode) {
+        print('[SOUND] All sounds paused');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SOUND] Error pausing sounds: $e');
+      }
+    }
+  }
+
+  /// Resume all sounds
+  Future<void> resumeAll() async {
+    if (!_soundEnabled) return;
+
+    try {
+      for (final player in _players.values) {
+        if (player.playerState.playing == false &&
+            player.playerState.processingState != ProcessingState.idle) {
+          await player.play();
+        }
+      }
+
+      if (kDebugMode) {
+        print('[SOUND] All sounds resumed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SOUND] Error resuming sounds: $e');
+      }
     }
   }
 
   /// Stop all sounds
-  ///
-  /// Placeholder implementation. In production would stop all active players.
   Future<void> stopAll() async {
     try {
-      if (kDebugMode) {
-        print('[SOUND] Stopping all sounds');
+      for (final player in _players.values) {
+        await player.stop();
       }
-      // TODO: Actual implementation
-      // Stop all active audio players
+
+      if (kDebugMode) {
+        print('[SOUND] All sounds stopped');
+      }
     } catch (e) {
       if (kDebugMode) {
         print('[SOUND] Error stopping sounds: $e');
@@ -143,15 +264,26 @@ class SoundService {
   }
 
   /// Dispose resources and cleanup audio players
-  ///
-  /// Call this when the app exits or sound service is no longer needed.
-  /// In production, would dispose all active AudioPlayer instances.
-  void dispose() {
-    _soundEnabled = false;
-    // TODO: Actual implementation
-    // Dispose all active audio players to free resources
-    if (kDebugMode) {
-      print('[SOUND] SoundService disposed');
+  /// Call this when the app exits or sound service is no longer needed
+  Future<void> dispose() async {
+    try {
+      await stopAll();
+
+      for (final player in _players.values) {
+        await player.dispose();
+      }
+
+      _players.clear();
+      _initialized = false;
+      _soundEnabled = false;
+
+      if (kDebugMode) {
+        print('[SOUND] SoundService disposed - all audio players released');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[SOUND] Error disposing SoundService: $e');
+      }
     }
   }
 }
