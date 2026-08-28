@@ -348,3 +348,184 @@ class _SlideInAnimationState extends State<SlideInAnimation>
     );
   }
 }
+
+/// Chess piece move animation
+class PieceMoveAnimation extends StatefulWidget {
+  final Widget child;
+  final Offset from;
+  final Offset to;
+  final Duration duration;
+
+  const PieceMoveAnimation({
+    Key? key,
+    required this.child,
+    required this.from,
+    required this.to,
+    this.duration = const Duration(milliseconds: 400),
+  }) : super(key: key);
+
+  @override
+  State<PieceMoveAnimation> createState() => _PieceMoveAnimationState();
+}
+
+class _PieceMoveAnimationState extends State<PieceMoveAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _positionAnimation;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.duration,
+      vsync: this,
+    );
+
+    // Position animation with easing
+    _positionAnimation = Tween<Offset>(
+      begin: widget.from,
+      end: widget.to,
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic),
+    );
+
+    // Subtle rotation during move
+    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.05).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: _positionAnimation.value,
+          child: Transform.rotate(
+            angle: _rotationAnimation.value,
+            child: child,
+          ),
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+/// Capture animation for captured pieces
+class CaptureAnimation extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+
+  const CaptureAnimation({
+    Key? key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 300),
+  }) : super(key: key);
+
+  @override
+  State<CaptureAnimation> createState() => _CaptureAnimationState();
+}
+
+class _CaptureAnimationState extends State<CaptureAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.duration,
+      vsync: this,
+    );
+
+    // Scale down effect
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInCubic),
+    );
+
+    // Fade out effect
+    _opacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: FadeTransition(
+        opacity: _opacityAnimation,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Check warning animation
+class CheckWarningAnimation extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+
+  const CheckWarningAnimation({
+    Key? key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 600),
+  }) : super(key: key);
+
+  @override
+  State<CheckWarningAnimation> createState() => _CheckWarningAnimationState();
+}
+
+class _CheckWarningAnimationState extends State<CheckWarningAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.duration,
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _pulseAnimation,
+      child: widget.child,
+    );
+  }
+}
