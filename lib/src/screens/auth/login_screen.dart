@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/validation_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   final VoidCallback onSignUpTap;
@@ -55,6 +56,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         password: _passwordController.text,
       );
       // Navigation happens automatically when auth state changes
+    } on ValidationException catch (e) {
+      setState(() {
+        _errorMessage = e.message;
+      });
     } catch (e) {
       setState(() {
         _errorMessage = _extractErrorMessage(e.toString());
@@ -62,6 +67,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } finally {
       if (mounted) {
         setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authNotifier = ref.read(authStateNotifierProvider.notifier);
+      await authNotifier.signInWithGoogle();
+      // Navigation happens automatically when auth state changes
+    } catch (e) {
+      if (e.toString().contains('cancelled')) {
+        // User cancelled, don't show error
+        setState(() {
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = _extractErrorMessage(e.toString());
           _isLoading = false;
         });
       }
@@ -257,9 +287,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 width: double.infinity,
                 height: 48,
                 child: OutlinedButton.icon(
-                  onPressed: _isLoading ? null : () {
-                    // TODO: Implement Google Sign-In
-                  },
+                  onPressed: _isLoading ? null : _handleGoogleSignIn,
                   icon: const Text('🔵'),
                   label: const Text('Sign in with Google'),
                 ),

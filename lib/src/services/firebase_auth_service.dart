@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:logger/logger.dart';
 import '../models/user.dart';
 import 'validation_service.dart';
@@ -122,13 +123,86 @@ class FirebaseAuthService {
   }
 
   /// Sign in with Google
+  ///
+  /// Handles the complete Google Sign-In flow:
+  /// 1. Triggers Google Sign-In UI
+  /// 2. Gets authentication tokens
+  /// 3. Creates Firebase credential
+  /// 4. Signs into Firebase
+  /// 5. Creates/updates user in Firestore
+  ///
+  /// Requirements:
+  /// - Google OAuth credentials configured in Google Cloud Console
+  /// - SHA-1 fingerprint registered for Android app
+  /// - Bundle ID registered for iOS app
   Future<UserModel?> signInWithGoogle() async {
     try {
       _logger.i('Signing in with Google');
 
-      // TODO: Implement Google Sign-In
-      // This requires google_sign_in package setup
-      throw UnimplementedError('Google Sign-In not yet implemented');
+      // Trigger Google Sign-In UI
+      // User sees Google sign-in dialog
+      final googleUser = await GoogleSignIn().signIn();
+
+      if (googleUser == null) {
+        _logger.i('Google sign-in cancelled by user');
+        return null;
+      }
+
+      _logger.i('Google user signed in: ${googleUser.email}');
+
+      // Get authentication tokens from Google
+      final googleAuth = await googleUser.authentication;
+
+      // Create Firebase credential using Google authentication tokens
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Sign into Firebase with Google credential
+      final userCredential = await _auth.signInWithCredential(credential);
+      final firebaseUser = userCredential.user;
+
+      if (firebaseUser == null) {
+        throw Exception('Failed to sign in with Google');
+      }
+
+      _logger.i('Signed into Firebase with Google: ${firebaseUser.uid}');
+
+      // Check if user already exists in Firestore
+      final userDoc =
+          await _firestore.collection('users').doc(firebaseUser.uid).get();
+
+      if (!userDoc.exists) {
+        // Create new user document in Firestore
+        _logger.i('Creating new user document for Google sign-in');
+        final newUser = UserModel(
+          uid: firebaseUser.uid,
+          email: firebaseUser.email ?? 'no-email@google.com',
+          displayName: firebaseUser.displayName ?? 'Google User',
+          photoUrl: firebaseUser.photoURL,
+          emailVerified: firebaseUser.emailVerified,
+          rating: 1500, // Default starting rating
+          onlineRating: 1500,
+          createdAt: DateTime.now(),
+        );
+
+        await _firestore
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .set(newUser.toJson());
+
+        _logger.i('User document created from Google sign-in: ${firebaseUser.uid}');
+        return newUser;
+      } else {
+        // User already exists, retrieve from Firestore
+        _logger.i('User already exists in Firestore, retrieving data');
+        final user = await getCurrentUser();
+        return user;
+      }
+    } on FirebaseAuthException catch (e) {
+      _logger.e('Firebase auth error during Google sign-in: ${e.code} - ${e.message}');
+      rethrow;
     } catch (e) {
       _logger.e('Error signing in with Google: $e');
       rethrow;
