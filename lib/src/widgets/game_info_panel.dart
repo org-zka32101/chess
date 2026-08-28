@@ -89,6 +89,8 @@ class GameInfoPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Padding(
@@ -135,22 +137,22 @@ class GameInfoPanel extends StatelessWidget {
               crossAxisSpacing: 12,
               childAspectRatio: 1.5,
               children: [
-                _buildInfoCard(
+                _buildInfoCard(context,
                   icon: Icons.category,
                   label: 'Type',
                   value: gameType,
                 ),
-                _buildInfoCard(
+                _buildInfoCard(context,
                   icon: Icons.schedule,
                   label: 'Time Control',
                   value: timeControl,
                 ),
-                _buildInfoCard(
+                _buildInfoCard(context,
                   icon: Icons.layers,
                   label: 'Moves',
                   value: totalMoves.toString(),
                 ),
-                _buildInfoCard(
+                _buildInfoCard(context,
                   icon: Icons.timer,
                   label: 'Elapsed',
                   value: _formatElapsedTime(elapsedSeconds),
@@ -206,34 +208,41 @@ class GameInfoPanel extends StatelessWidget {
   }
 
   /// Build info card widget
-  Widget _buildInfoCard({
+  Widget _buildInfoCard(BuildContext context, {
     required IconData icon,
     required String label,
     required String value,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).primaryColor;
+    final cardColor = isDarkMode ? Colors.grey[900] : Colors.grey[50];
+    final borderColor = isDarkMode ? Colors.grey[800] : Colors.grey[200];
+    final labelColor = isDarkMode ? Colors.grey[400] : Colors.grey[600];
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: borderColor ?? Colors.grey),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 20, color: Colors.blue),
+          Icon(icon, size: 20, color: primaryColor),
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 10, color: Colors.grey),
+            style: TextStyle(fontSize: 10, color: labelColor),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white70 : Colors.black87,
             ),
             textAlign: TextAlign.center,
             maxLines: 1,
@@ -280,12 +289,17 @@ class GameInfoPanel extends StatelessWidget {
 
   /// Build game ID row with copy button
   Widget _buildGameIdRow(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDarkMode ? Colors.grey[900] : Colors.grey[50];
+    final borderColor = isDarkMode ? Colors.grey[800] : Colors.grey[200];
+    final labelColor = isDarkMode ? Colors.grey[400] : Colors.grey[600];
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: borderColor ?? Colors.grey),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -295,15 +309,16 @@ class GameInfoPanel extends StatelessWidget {
             children: [
               Text(
                 'Game ID',
-                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 10, color: labelColor),
               ),
               const SizedBox(height: 2),
               Text(
                 gameId,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Courier',
+                  color: isDarkMode ? Colors.white70 : Colors.black87,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

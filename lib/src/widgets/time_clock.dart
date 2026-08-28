@@ -101,25 +101,31 @@ class _TimeClockState extends State<TimeClock> with SingleTickerProviderStateMix
     }
   }
 
-  /// Get time display color based on remaining time
-  Color _getTimeColor() {
+  /// Get time display color based on remaining time and theme
+  Color _getTimeColor(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     if (widget.timeMs < 10000) {
-      return Colors.red; // < 10 seconds
+      return Colors.red; // < 10 seconds (same in both themes)
     } else if (widget.timeMs < 60000) {
-      return Colors.orange; // < 1 minute
+      return Colors.orange; // < 1 minute (same in both themes)
     } else {
-      return Colors.black87;
+      return isDarkMode ? Colors.white70 : Colors.black87;
     }
   }
 
-  /// Get background color based on remaining time and player state
-  Color _getBackgroundColor() {
+  /// Get background color based on remaining time, player state, and theme
+  Color _getBackgroundColor(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     if (widget.timeMs < 10000) {
-      return Colors.red.withOpacity(0.1); // < 10 seconds
+      return Colors.red.withOpacity(0.2); // < 10 seconds
     } else if (widget.timeMs < 60000) {
-      return Colors.orange.withOpacity(0.1); // < 1 minute
+      return Colors.orange.withOpacity(0.15); // < 1 minute
     } else if (widget.isCurrentPlayer) {
-      return Colors.blue.withOpacity(0.05);
+      return isDarkMode
+          ? Colors.blue.withOpacity(0.15)  // Darker blue for dark mode
+          : Colors.blue.withOpacity(0.05); // Light blue for light mode
     } else {
       return Colors.transparent;
     }
@@ -140,30 +146,32 @@ class _TimeClockState extends State<TimeClock> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final isLowTime = widget.timeMs < 10000;
-    final timeColor = _getTimeColor();
-    final backgroundColor = _getBackgroundColor();
+    final timeColor = _getTimeColor(context);
+    final backgroundColor = _getBackgroundColor(context);
     final fontSize = _getFontSize();
 
     // Use pulse animation only when time is critically low
     if (isLowTime && widget.timeMs > 0) {
       return ScaleTransition(
         scale: _pulseAnimation,
-        child: _buildClockWidget(timeColor, backgroundColor, fontSize),
+        child: _buildClockWidget(context, timeColor, backgroundColor, fontSize),
       );
     } else {
-      return _buildClockWidget(timeColor, backgroundColor, fontSize);
+      return _buildClockWidget(context, timeColor, backgroundColor, fontSize);
     }
   }
 
   /// Build the actual clock widget
-  Widget _buildClockWidget(Color timeColor, Color backgroundColor, double fontSize) {
+  Widget _buildClockWidget(BuildContext context, Color timeColor, Color backgroundColor, double fontSize) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: timeColor.withOpacity(0.3),
+          color: timeColor.withOpacity(isDarkMode ? 0.5 : 0.3),
           width: 1,
         ),
       ),
