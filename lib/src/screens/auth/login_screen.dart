@@ -98,6 +98,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _handleAppleSignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authNotifier = ref.read(authStateNotifierProvider.notifier);
+      await authNotifier.signInWithApple();
+      // Navigation happens automatically when auth state changes
+    } catch (e) {
+      if (e.toString().contains('cancelled') || e.toString().contains('not available')) {
+        // User cancelled or not available, don't show error for cancelled
+        if (e.toString().contains('not available')) {
+          setState(() {
+            _errorMessage = 'Sign in with Apple is not available on this device';
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _errorMessage = _extractErrorMessage(e.toString());
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   String _extractErrorMessage(String error) {
     if (error.contains('user-not-found')) {
       return 'No account found with this email';
@@ -299,9 +331,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 width: double.infinity,
                 height: 48,
                 child: OutlinedButton.icon(
-                  onPressed: _isLoading ? null : () {
-                    // TODO: Implement Apple Sign-In
-                  },
+                  onPressed: _isLoading ? null : _handleAppleSignIn,
                   icon: const Text('🍎'),
                   label: const Text('Sign in with Apple'),
                 ),

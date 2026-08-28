@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:logger/logger.dart';
 import '../models/user.dart';
 import 'validation_service.dart';
@@ -210,13 +211,107 @@ class FirebaseAuthService {
   }
 
   /// Sign in with Apple
+  ///
+  /// Handles the complete Apple Sign-In flow:
+  /// 1. Checks if Sign-In with Apple is available on device
+  /// 2. Requests user credentials (email, fullName)
+  /// 3. Creates Firebase OAuth credential
+  /// 4. Signs into Firebase
+  /// 5. Creates/updates user in Firestore
+  ///
+  /// Requirements:
+  /// - Apple Developer account with Team ID
+  /// - Sign-In with Apple certificates configured
+  /// - Service ID registered for the app
+  /// - iOS 13+ (automatically handled by package)
   Future<UserModel?> signInWithApple() async {
     try {
       _logger.i('Signing in with Apple');
 
-      // TODO: Implement Apple Sign-In
-      // This requires sign_in_with_apple package setup
-      throw UnimplementedError('Apple Sign-In not yet implemented');
+      // Check if Sign-In with Apple is available on device
+      final isAvailable = await SignInWithApple.isAvailable();
+      if (!isAvailable) {
+        throw Exception('Sign in with Apple is not available on this device');
+      }
+
+      _logger.i('Sign in with Apple is available, requesting credentials');
+
+      // Request Apple Sign-In credential with email and full name
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDSignInScopes.email,
+          AppleIDSignInScopes.fullName,
+        ],
+      );
+
+      _logger.i('Apple credentials received, creating OAuth credential');
+
+      // Create Firebase OAuth credential from Apple tokens
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: credential.identityToken,
+        accessToken: credential.authorizationCode,
+      );
+
+      // Sign into Firebase with Apple credential
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+      final firebaseUser = userCredential.user;
+
+      if (firebaseUser == null) {
+        throw Exception('Failed to sign in with Apple');
+      }
+
+      _logger.i('Signed into Firebase with Apple: ${firebaseUser.uid}');
+
+      // Construct display name from Apple's full name response
+      String displayName = firebaseUser.displayName ?? 'Apple User';
+      if (credential.givenName != null || credential.familyName != null) {
+        final givenName = credential.givenName ?? '';
+        final familyName = credential.familyName ?? '';
+        displayName = '$givenName $familyName'.trim();
+        if (displayName.isEmpty) {
+          displayName = 'Apple User';
+        }
+      }
+
+      // Get email from credential (Apple may not provide it on first sign-in)
+      final email = credential.email ?? firebaseUser.email ?? 'no-email@apple.com';
+
+      _logger.i('Display name: $displayName, Email: $email');
+
+      // Check if user already exists in Firestore
+      final userDoc =
+          await _firestore.collection('users').doc(firebaseUser.uid).get();
+
+      if (!userDoc.exists) {
+        // Create new user document in Firestore
+        _logger.i('Creating new user document for Apple sign-in');
+        final newUser = UserModel(
+          uid: firebaseUser.uid,
+          email: email,
+          displayName: displayName,
+          photoUrl: null, // Apple doesn't provide photo URL
+          emailVerified: firebaseUser.emailVerified,
+          rating: 1500, // Default starting rating
+          onlineRating: 1500,
+          createdAt: DateTime.now(),
+        );
+
+        await _firestore
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .set(newUser.toJson());
+
+        _logger.i('User document created from Apple sign-in: ${firebaseUser.uid}');
+        return newUser;
+      } else {
+        // User already exists, retrieve from Firestore
+        _logger.i('User already exists in Firestore, retrieving data');
+        final user = await getCurrentUser();
+        return user;
+      }
+    } on FirebaseAuthException catch (e) {
+      _logger.e('Firebase auth error during Apple sign-in: ${e.code} - ${e.message}');
+      rethrow;
     } catch (e) {
       _logger.e('Error signing in with Apple: $e');
       rethrow;
