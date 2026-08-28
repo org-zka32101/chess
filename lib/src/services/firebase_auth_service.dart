@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import '../models/user.dart';
+import 'validation_service.dart';
+import 'error_logging_service.dart';
 
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -36,6 +38,13 @@ class FirebaseAuthService {
     try {
       _logger.i('Registering user with email: $email');
 
+      // Validate input before attempting registration
+      ValidationService.validateAuthFields(
+        email: email,
+        password: password,
+        displayName: displayName,
+      );
+
       // Create user in Firebase Auth
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -69,6 +78,9 @@ class FirebaseAuthService {
 
       _logger.i('User registered successfully: ${firebaseUser.uid}');
       return newUser;
+    } on ValidationException catch (e) {
+      _logger.w('Validation error during registration: ${e.message}');
+      rethrow;
     } on FirebaseAuthException catch (e) {
       _logger.e('Firebase auth error: ${e.code} - ${e.message}');
       rethrow;
@@ -86,6 +98,9 @@ class FirebaseAuthService {
     try {
       _logger.i('Signing in user with email: $email');
 
+      // Validate email format
+      ValidationService.validateEmail(email);
+
       await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -94,6 +109,9 @@ class FirebaseAuthService {
       final user = await getCurrentUser();
       _logger.i('User signed in successfully: ${user?.uid}');
       return user;
+    } on ValidationException catch (e) {
+      _logger.w('Validation error during sign in: ${e.message}');
+      rethrow;
     } on FirebaseAuthException catch (e) {
       _logger.e('Firebase auth error: ${e.code} - ${e.message}');
       rethrow;
@@ -135,8 +153,15 @@ class FirebaseAuthService {
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       _logger.i('Sending password reset email to: $email');
+
+      // Validate email format
+      ValidationService.validateEmail(email);
+
       await _auth.sendPasswordResetEmail(email: email);
       _logger.i('Password reset email sent');
+    } on ValidationException catch (e) {
+      _logger.w('Validation error during password reset request: ${e.message}');
+      rethrow;
     } on FirebaseAuthException catch (e) {
       _logger.e('Firebase auth error: ${e.code} - ${e.message}');
       rethrow;

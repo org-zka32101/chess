@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game.dart';
+import '../services/error_logging_service.dart';
 
 final firestoreProvider = Provider((ref) => FirebaseFirestore.instance);
 
@@ -34,8 +35,14 @@ final activeGamesProvider = StreamProvider<List<GameModel>>((ref) async* {
           .toList();
       yield games;
     }
-  } catch (e) {
-    yield [];
+  } catch (e, stackTrace) {
+    await ErrorLoggingService.logError(
+      e,
+      stackTrace,
+      context: 'activeGamesProvider',
+      reason: 'Failed to fetch active games from Firestore',
+    );
+    yield [];  // Graceful fallback while error is logged
   }
 });
 
@@ -70,8 +77,14 @@ final gameHistoryProvider = StreamProvider<List<GameModel>>((ref) async* {
           .toList();
       yield games;
     }
-  } catch (e) {
-    yield [];
+  } catch (e, stackTrace) {
+    await ErrorLoggingService.logError(
+      e,
+      stackTrace,
+      context: 'gameHistoryProvider',
+      reason: 'Failed to fetch game history from Firestore',
+    );
+    yield [];  // Graceful fallback while error is logged
   }
 });
 
@@ -93,8 +106,14 @@ final gameByIdProvider = StreamProvider.family<GameModel?, String>((ref, gameId)
         yield null;
       }
     }
-  } catch (e) {
-    yield null;
+  } catch (e, stackTrace) {
+    await ErrorLoggingService.logError(
+      e,
+      stackTrace,
+      context: 'gameByIdProvider',
+      reason: 'Failed to fetch game $gameId from Firestore',
+    );
+    yield null;  // Graceful fallback while error is logged
   }
 });
 
