@@ -3,14 +3,33 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:logger/logger.dart';
+import 'dart:io' show SocketException;
 import '../models/user.dart';
 import 'validation_service.dart';
 import 'error_logging_service.dart';
+import 'rate_limiting_service.dart';
+
+/// Exception thrown for network-related errors.
+class NetworkException implements Exception {
+  final String message;
+  final int? retryCount;
+  final Duration? retryAfter;
+
+  NetworkException(
+    this.message, {
+    this.retryCount,
+    this.retryAfter,
+  });
+
+  @override
+  String toString() => message;
+}
 
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final Logger _logger = Logger();
+  final RateLimitingService _rateLimiting = RateLimitingService();
 
   /// Get current Firebase user
   User? get currentFirebaseUser => _auth.currentUser;
@@ -40,6 +59,9 @@ class FirebaseAuthService {
     try {
       _logger.i('Registering user with email: $email');
 
+      // Check rate limit before attempting registration
+      _rateLimiting.checkRateLimit('signUp');
+
       // Validate input before attempting registration
       ValidationService.validateAuthFields(
         email: email,
@@ -47,39 +69,48 @@ class FirebaseAuthService {
         displayName: displayName,
       );
 
-      // Create user in Firebase Auth
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      try {
+        // Create user in Firebase Auth
+        final userCredential = await _auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
 
-      final firebaseUser = userCredential.user;
-      if (firebaseUser == null) {
-        throw Exception('Failed to create Firebase user');
+        final firebaseUser = userCredential.user;
+        if (firebaseUser == null) {
+          throw Exception('Failed to create Firebase user');
+        }
+
+        // Update profile
+        await firebaseUser.updateDisplayName(displayName);
+
+        // Create user document in Firestore
+        final newUser = UserModel(
+          uid: firebaseUser.uid,
+          email: firebaseUser.email ?? email,
+          displayName: displayName,
+          photoUrl: firebaseUser.photoURL,
+          emailVerified: firebaseUser.emailVerified,
+          rating: 1500, // Default starting rating
+          onlineRating: 1500,
+          createdAt: DateTime.now(),
+        );
+
+        await _firestore
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .set(newUser.toJson());
+
+        _rateLimiting.recordSuccess('signUp');
+        _logger.i('User registered successfully: ${firebaseUser.uid}');
+        return newUser;
+      } on FirebaseAuthException catch (e) {
+        _rateLimiting.recordFailure('signUp');
+        rethrow;
       }
-
-      // Update profile
-      await firebaseUser.updateDisplayName(displayName);
-
-      // Create user document in Firestore
-      final newUser = UserModel(
-        uid: firebaseUser.uid,
-        email: firebaseUser.email ?? email,
-        displayName: displayName,
-        photoUrl: firebaseUser.photoURL,
-        emailVerified: firebaseUser.emailVerified,
-        rating: 1500, // Default starting rating
-        onlineRating: 1500,
-        createdAt: DateTime.now(),
-      );
-
-      await _firestore
-          .collection('users')
-          .doc(firebaseUser.uid)
-          .set(newUser.toJson());
-
-      _logger.i('User registered successfully: ${firebaseUser.uid}');
-      return newUser;
+    } on RateLimitException catch (e) {
+      _logger.w('Rate limit exceeded for sign-up: ${e.message}');
+      rethrow;
     } on ValidationException catch (e) {
       _logger.w('Validation error during registration: ${e.message}');
       rethrow;
@@ -100,17 +131,29 @@ class FirebaseAuthService {
     try {
       _logger.i('Signing in user with email: $email');
 
+      // Check rate limit before attempting sign-in
+      _rateLimiting.checkRateLimit('signIn');
+
       // Validate email format
       ValidationService.validateEmail(email);
 
-      await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      try {
+        await _auth.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        _rateLimiting.recordSuccess('signIn');
+      } on FirebaseAuthException catch (e) {
+        _rateLimiting.recordFailure('signIn');
+        rethrow;
+      }
 
       final user = await getCurrentUser();
       _logger.i('User signed in successfully: ${user?.uid}');
       return user;
+    } on RateLimitException catch (e) {
+      _logger.w('Rate limit exceeded for sign-in: ${e.message}');
+      rethrow;
     } on ValidationException catch (e) {
       _logger.w('Validation error during sign in: ${e.message}');
       rethrow;
@@ -140,67 +183,99 @@ class FirebaseAuthService {
     try {
       _logger.i('Signing in with Google');
 
-      // Trigger Google Sign-In UI
-      // User sees Google sign-in dialog
-      final googleUser = await GoogleSignIn().signIn();
+      // Check rate limit before attempting sign-in
+      _rateLimiting.checkRateLimit('signInWithGoogle');
 
-      if (googleUser == null) {
-        _logger.i('Google sign-in cancelled by user');
-        return null;
-      }
+      try {
+        // Trigger Google Sign-In UI
+        // User sees Google sign-in dialog
+        final googleUser = await GoogleSignIn().signIn();
 
-      _logger.i('Google user signed in: ${googleUser.email}');
+        if (googleUser == null) {
+          _logger.i('Google sign-in cancelled by user');
+          return null;
+        }
 
-      // Get authentication tokens from Google
-      final googleAuth = await googleUser.authentication;
+        _logger.i('Google user signed in: ${googleUser.email}');
 
-      // Create Firebase credential using Google authentication tokens
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign into Firebase with Google credential
-      final userCredential = await _auth.signInWithCredential(credential);
-      final firebaseUser = userCredential.user;
-
-      if (firebaseUser == null) {
-        throw Exception('Failed to sign in with Google');
-      }
-
-      _logger.i('Signed into Firebase with Google: ${firebaseUser.uid}');
-
-      // Check if user already exists in Firestore
-      final userDoc =
-          await _firestore.collection('users').doc(firebaseUser.uid).get();
-
-      if (!userDoc.exists) {
-        // Create new user document in Firestore
-        _logger.i('Creating new user document for Google sign-in');
-        final newUser = UserModel(
-          uid: firebaseUser.uid,
-          email: firebaseUser.email ?? 'no-email@google.com',
-          displayName: firebaseUser.displayName ?? 'Google User',
-          photoUrl: firebaseUser.photoURL,
-          emailVerified: firebaseUser.emailVerified,
-          rating: 1500, // Default starting rating
-          onlineRating: 1500,
-          createdAt: DateTime.now(),
+        // Get authentication tokens from Google (network call)
+        final googleAuth = await _handleNetworkCall(
+          () => googleUser.authentication,
+          'Fetch Google auth tokens',
         );
 
-        await _firestore
-            .collection('users')
-            .doc(firebaseUser.uid)
-            .set(newUser.toJson());
+        // Create Firebase credential using Google authentication tokens
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
 
-        _logger.i('User document created from Google sign-in: ${firebaseUser.uid}');
-        return newUser;
-      } else {
-        // User already exists, retrieve from Firestore
-        _logger.i('User already exists in Firestore, retrieving data');
-        final user = await getCurrentUser();
-        return user;
+        // Sign into Firebase with Google credential
+        final userCredential = await _handleNetworkCall(
+          () => _auth.signInWithCredential(credential),
+          'Sign into Firebase with Google credential',
+        );
+        final firebaseUser = userCredential.user;
+
+        if (firebaseUser == null) {
+          throw Exception('Failed to sign in with Google');
+        }
+
+        _logger.i('Signed into Firebase with Google: ${firebaseUser.uid}');
+
+        // Check if user already exists in Firestore (with retry)
+        final userDoc = await _handleNetworkCall(
+          () => _firestore.collection('users').doc(firebaseUser.uid).get(),
+          'Fetch user document from Firestore',
+        );
+
+        if (!userDoc.exists) {
+          // Create new user document in Firestore
+          _logger.i('Creating new user document for Google sign-in');
+          final newUser = UserModel(
+            uid: firebaseUser.uid,
+            email: firebaseUser.email ?? 'no-email@google.com',
+            displayName: firebaseUser.displayName ?? 'Google User',
+            photoUrl: firebaseUser.photoURL,
+            emailVerified: firebaseUser.emailVerified,
+            rating: 1500, // Default starting rating
+            onlineRating: 1500,
+            createdAt: DateTime.now(),
+          );
+
+          await _handleNetworkCall(
+            () => _firestore
+                .collection('users')
+                .doc(firebaseUser.uid)
+                .set(newUser.toJson()),
+            'Create new user document in Firestore',
+          );
+
+          _rateLimiting.recordSuccess('signInWithGoogle');
+          _logger.i('User document created from Google sign-in: ${firebaseUser.uid}');
+          return newUser;
+        } else {
+          // User already exists, retrieve from Firestore
+          _logger.i('User already exists in Firestore, retrieving data');
+          final user = await getCurrentUser();
+          _rateLimiting.recordSuccess('signInWithGoogle');
+          return user;
+        }
+      } on SocketException {
+        _rateLimiting.recordFailure('signInWithGoogle');
+        throw NetworkException(
+          'Network error: Unable to connect to sign-in service. Please check your internet connection and try again.',
+        );
+      } on FirebaseAuthException catch (e) {
+        _rateLimiting.recordFailure('signInWithGoogle');
+        rethrow;
       }
+    } on RateLimitException catch (e) {
+      _logger.w('Rate limit exceeded for Google sign-in: ${e.message}');
+      rethrow;
+    } on NetworkException catch (e) {
+      _logger.w('Network error during Google sign-in: ${e.message}');
+      rethrow;
     } on FirebaseAuthException catch (e) {
       _logger.e('Firebase auth error during Google sign-in: ${e.code} - ${e.message}');
       rethrow;
@@ -228,87 +303,119 @@ class FirebaseAuthService {
     try {
       _logger.i('Signing in with Apple');
 
-      // Check if Sign-In with Apple is available on device
-      final isAvailable = await SignInWithApple.isAvailable();
-      if (!isAvailable) {
-        throw Exception('Sign in with Apple is not available on this device');
-      }
+      // Check rate limit before attempting sign-in
+      _rateLimiting.checkRateLimit('signInWithApple');
 
-      _logger.i('Sign in with Apple is available, requesting credentials');
-
-      // Request Apple Sign-In credential with email and full name
-      final credential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDSignInScopes.email,
-          AppleIDSignInScopes.fullName,
-        ],
-      );
-
-      _logger.i('Apple credentials received, creating OAuth credential');
-
-      // Create Firebase OAuth credential from Apple tokens
-      final oauthCredential = OAuthProvider('apple.com').credential(
-        idToken: credential.identityToken,
-        accessToken: credential.authorizationCode,
-      );
-
-      // Sign into Firebase with Apple credential
-      final userCredential = await _auth.signInWithCredential(oauthCredential);
-      final firebaseUser = userCredential.user;
-
-      if (firebaseUser == null) {
-        throw Exception('Failed to sign in with Apple');
-      }
-
-      _logger.i('Signed into Firebase with Apple: ${firebaseUser.uid}');
-
-      // Construct display name from Apple's full name response
-      String displayName = firebaseUser.displayName ?? 'Apple User';
-      if (credential.givenName != null || credential.familyName != null) {
-        final givenName = credential.givenName ?? '';
-        final familyName = credential.familyName ?? '';
-        displayName = '$givenName $familyName'.trim();
-        if (displayName.isEmpty) {
-          displayName = 'Apple User';
+      try {
+        // Check if Sign-In with Apple is available on device
+        final isAvailable = await SignInWithApple.isAvailable();
+        if (!isAvailable) {
+          throw Exception('Sign in with Apple is not available on this device');
         }
-      }
 
-      // Get email from credential (Apple may not provide it on first sign-in)
-      final email = credential.email ?? firebaseUser.email ?? 'no-email@apple.com';
+        _logger.i('Sign in with Apple is available, requesting credentials');
 
-      _logger.i('Display name: $displayName, Email: $email');
-
-      // Check if user already exists in Firestore
-      final userDoc =
-          await _firestore.collection('users').doc(firebaseUser.uid).get();
-
-      if (!userDoc.exists) {
-        // Create new user document in Firestore
-        _logger.i('Creating new user document for Apple sign-in');
-        final newUser = UserModel(
-          uid: firebaseUser.uid,
-          email: email,
-          displayName: displayName,
-          photoUrl: null, // Apple doesn't provide photo URL
-          emailVerified: firebaseUser.emailVerified,
-          rating: 1500, // Default starting rating
-          onlineRating: 1500,
-          createdAt: DateTime.now(),
+        // Request Apple Sign-In credential with email and full name
+        final credential = await _handleNetworkCall(
+          () => SignInWithApple.getAppleIDCredential(
+            scopes: [
+              AppleIDSignInScopes.email,
+              AppleIDSignInScopes.fullName,
+            ],
+          ),
+          'Request Apple Sign-In credentials',
         );
 
-        await _firestore
-            .collection('users')
-            .doc(firebaseUser.uid)
-            .set(newUser.toJson());
+        _logger.i('Apple credentials received, creating OAuth credential');
 
-        _logger.i('User document created from Apple sign-in: ${firebaseUser.uid}');
-        return newUser;
-      } else {
-        // User already exists, retrieve from Firestore
-        _logger.i('User already exists in Firestore, retrieving data');
-        final user = await getCurrentUser();
-        return user;
+        // Create Firebase OAuth credential from Apple tokens
+        final oauthCredential = OAuthProvider('apple.com').credential(
+          idToken: credential.identityToken,
+          accessToken: credential.authorizationCode,
+        );
+
+        // Sign into Firebase with Apple credential
+        final userCredential = await _handleNetworkCall(
+          () => _auth.signInWithCredential(oauthCredential),
+          'Sign into Firebase with Apple credential',
+        );
+        final firebaseUser = userCredential.user;
+
+        if (firebaseUser == null) {
+          throw Exception('Failed to sign in with Apple');
+        }
+
+        _logger.i('Signed into Firebase with Apple: ${firebaseUser.uid}');
+
+        // Construct display name from Apple's full name response
+        String displayName = firebaseUser.displayName ?? 'Apple User';
+        if (credential.givenName != null || credential.familyName != null) {
+          final givenName = credential.givenName ?? '';
+          final familyName = credential.familyName ?? '';
+          displayName = '$givenName $familyName'.trim();
+          if (displayName.isEmpty) {
+            displayName = 'Apple User';
+          }
+        }
+
+        // Get email from credential (Apple may not provide it on first sign-in)
+        final email = credential.email ?? firebaseUser.email ?? 'no-email@apple.com';
+
+        _logger.i('Display name: $displayName, Email: $email');
+
+        // Check if user already exists in Firestore (with retry)
+        final userDoc = await _handleNetworkCall(
+          () => _firestore.collection('users').doc(firebaseUser.uid).get(),
+          'Fetch user document from Firestore',
+        );
+
+        if (!userDoc.exists) {
+          // Create new user document in Firestore
+          _logger.i('Creating new user document for Apple sign-in');
+          final newUser = UserModel(
+            uid: firebaseUser.uid,
+            email: email,
+            displayName: displayName,
+            photoUrl: null, // Apple doesn't provide photo URL
+            emailVerified: firebaseUser.emailVerified,
+            rating: 1500, // Default starting rating
+            onlineRating: 1500,
+            createdAt: DateTime.now(),
+          );
+
+          await _handleNetworkCall(
+            () => _firestore
+                .collection('users')
+                .doc(firebaseUser.uid)
+                .set(newUser.toJson()),
+            'Create new user document in Firestore',
+          );
+
+          _rateLimiting.recordSuccess('signInWithApple');
+          _logger.i('User document created from Apple sign-in: ${firebaseUser.uid}');
+          return newUser;
+        } else {
+          // User already exists, retrieve from Firestore
+          _logger.i('User already exists in Firestore, retrieving data');
+          final user = await getCurrentUser();
+          _rateLimiting.recordSuccess('signInWithApple');
+          return user;
+        }
+      } on SocketException {
+        _rateLimiting.recordFailure('signInWithApple');
+        throw NetworkException(
+          'Network error: Unable to connect to sign-in service. Please check your internet connection and try again.',
+        );
+      } on FirebaseAuthException catch (e) {
+        _rateLimiting.recordFailure('signInWithApple');
+        rethrow;
       }
+    } on RateLimitException catch (e) {
+      _logger.w('Rate limit exceeded for Apple sign-in: ${e.message}');
+      rethrow;
+    } on NetworkException catch (e) {
+      _logger.w('Network error during Apple sign-in: ${e.message}');
+      rethrow;
     } on FirebaseAuthException catch (e) {
       _logger.e('Firebase auth error during Apple sign-in: ${e.code} - ${e.message}');
       rethrow;
@@ -323,13 +430,31 @@ class FirebaseAuthService {
     try {
       _logger.i('Sending password reset email to: $email');
 
+      // Check rate limit before attempting password reset
+      _rateLimiting.checkRateLimit('passwordReset');
+
       // Validate email format
       ValidationService.validateEmail(email);
 
-      await _auth.sendPasswordResetEmail(email: email);
-      _logger.i('Password reset email sent');
+      try {
+        await _handleNetworkCall(
+          () => _auth.sendPasswordResetEmail(email: email),
+          'Send password reset email',
+        );
+        _rateLimiting.recordSuccess('passwordReset');
+        _logger.i('Password reset email sent');
+      } on FirebaseAuthException catch (e) {
+        _rateLimiting.recordFailure('passwordReset');
+        rethrow;
+      }
+    } on RateLimitException catch (e) {
+      _logger.w('Rate limit exceeded for password reset: ${e.message}');
+      rethrow;
     } on ValidationException catch (e) {
       _logger.w('Validation error during password reset request: ${e.message}');
+      rethrow;
+    } on NetworkException catch (e) {
+      _logger.w('Network error during password reset: ${e.message}');
       rethrow;
     } on FirebaseAuthException catch (e) {
       _logger.e('Firebase auth error: ${e.code} - ${e.message}');
@@ -422,4 +547,41 @@ class FirebaseAuthService {
 
   /// Auth state stream
   Stream<User?> authStateStream() => _auth.authStateChanges();
+
+  // ============================================
+  // NETWORK ERROR HANDLING
+  // ============================================
+
+  /// Handle network calls with error handling and conversion
+  ///
+  /// Wraps async network calls to:
+  /// 1. Catch socket/network exceptions
+  /// 2. Provide helpful error messages
+  /// 3. Enable retry logic in UI
+  Future<T> _handleNetworkCall<T>(
+    Future<T> Function() operation,
+    String operationName,
+  ) async {
+    try {
+      return await operation();
+    } on SocketException catch (e) {
+      _logger.e('$operationName - Network error: $e');
+      throw NetworkException(
+        'Network error: Unable to connect. Please check your internet connection and try again.',
+      );
+    } on TimeoutException catch (e) {
+      _logger.e('$operationName - Timeout: $e');
+      throw NetworkException(
+        'Connection timeout: The request took too long. Please try again.',
+      );
+    } on FirebaseException catch (e) {
+      if (e.code == 'network-error' || e.code == 'unavailable') {
+        _logger.e('$operationName - Firebase network error: ${e.message}');
+        throw NetworkException(
+          'Network error: Firebase service unavailable. Please try again.',
+        );
+      }
+      rethrow;
+    }
+  }
 }
