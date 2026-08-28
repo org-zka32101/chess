@@ -269,7 +269,7 @@ class GameService {
         'endedAt': FieldValue.serverTimestamp(),
       });
 
-      // Update user ratings (TODO: Calculate rating delta)
+      // Update user ratings with ELO calculation
       await _updateUserRatings(gameId, result);
     } catch (e) {
       print('Error resigning game: $e');
