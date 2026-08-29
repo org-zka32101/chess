@@ -169,6 +169,16 @@ class SoundService {
     }
   }
 
+  /// Get whether master sound is enabled
+  bool getMasterEnabled() => _soundMasterEnabled;
+
+  /// Get whether a category is enabled
+  bool getCategoryEnabled(SoundCategory category) =>
+      _categoryEnabled[category] ?? true;
+
+  /// Get the current volume level
+  double getVolume() => _volume;
+
   /// Dispose resources
   void dispose() {
     // TODO: Dispose audio players
