@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/user_preferences_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
+import 'sound_preferences_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -48,12 +49,18 @@ class SettingsScreen extends ConsumerWidget {
                 _buildSettingSection(
                   title: 'Sound & Notifications',
                   children: [
-                    _buildToggleOption(
-                      title: 'Sound Effects',
-                      subtitle: 'Play sounds during games and puzzles',
-                      value: preferences.soundEnabled,
-                      onChanged: (value) {
-                        preferencesService.setSoundEnabled(value);
+                    ListTile(
+                      leading: const Icon(Icons.volume_up),
+                      title: const Text('Sound Settings'),
+                      subtitle: const Text('Manage sound effects and volume'),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SoundPreferencesScreen(),
+                          ),
+                        );
                       },
                     ),
                     const Divider(height: 1),

@@ -65,26 +65,78 @@ extension SoundEffectExt on SoundEffect {
         return 'UI Swipe';
     }
   }
+
+  /// Categorize the sound effect
+  SoundCategory get category {
+    switch (this) {
+      case SoundEffect.movePiece:
+      case SoundEffect.capture:
+      case SoundEffect.check:
+        return SoundCategory.gamePlay;
+      case SoundEffect.checkmate:
+      case SoundEffect.gameOver:
+        return SoundCategory.gameEnd;
+      case SoundEffect.buttonTap:
+      case SoundEffect.uiSwipe:
+        return SoundCategory.ui;
+      case SoundEffect.notification:
+      case SoundEffect.success:
+      case SoundEffect.error:
+        return SoundCategory.notifications;
+    }
+  }
 }
 
-/// Sound service for managing audio playback
-class SoundService {
-  bool _soundEnabled = true;
+/// Sound categories for grouping effects
+enum SoundCategory {
+  gamePlay,      // Piece movement, capture, check
+  gameEnd,       // Checkmate, game over
+  ui,            // Button taps, swipes
+  notifications, // Notifications, success, error
+}
 
-  /// Set whether sound is enabled
-  void setSoundEnabled(bool enabled) {
-    _soundEnabled = enabled;
+/// Sound service for managing audio playback with category-based control
+class SoundService {
+  bool _soundMasterEnabled = true;
+  Map<SoundCategory, bool> _categoryEnabled = {
+    SoundCategory.gamePlay: true,
+    SoundCategory.gameEnd: true,
+    SoundCategory.ui: true,
+    SoundCategory.notifications: true,
+  };
+  double _volume = 1.0;
+
+  /// Set whether master sound is enabled
+  void setSoundMasterEnabled(bool enabled) {
+    _soundMasterEnabled = enabled;
   }
 
-  /// Play a sound effect
+  /// Set whether a category is enabled
+  void setCategoryEnabled(SoundCategory category, bool enabled) {
+    _categoryEnabled[category] = enabled;
+  }
+
+  /// Set the volume level (0.0 - 1.0)
+  void setVolume(double volume) {
+    _volume = volume.clamp(0.0, 1.0);
+  }
+
+  /// Check if a sound should play based on category and preferences
+  bool _shouldPlaySound(SoundEffect sound) {
+    if (!_soundMasterEnabled) return false;
+    final category = sound.category;
+    return _categoryEnabled[category] ?? true;
+  }
+
+  /// Play a sound effect with category checking
   Future<void> play(SoundEffect sound) async {
-    if (!_soundEnabled) return;
+    if (!_shouldPlaySound(sound)) return;
 
     try {
       // TODO: Implement actual audio playback using audio_players or just_audio package
       // For now, this is a placeholder that logs the sound play
       if (kDebugMode) {
-        print('[SOUND] Playing: ${sound.displayName}');
+        print('[SOUND] Playing: ${sound.displayName} (Volume: ${(_volume * 100).toStringAsFixed(0)}%)');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -96,8 +148,10 @@ class SoundService {
   /// Play multiple sounds in sequence
   Future<void> playSequence(List<SoundEffect> sounds) async {
     for (final sound in sounds) {
-      await play(sound);
-      await Future.delayed(const Duration(milliseconds: 100));
+      if (_shouldPlaySound(sound)) {
+        await play(sound);
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
     }
   }
 
