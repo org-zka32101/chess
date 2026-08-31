@@ -41,9 +41,11 @@ class LeonardoGenerator:
             'Content-Type': 'application/json'
         }
 
+    PHOENIX_MODEL_ID = 'de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3'  # Leonardo Phoenix 1.0
+
     def generate_image(self, prompt: str, filename: str,
                       width: int = 1024, height: int = 1024,
-                      model: str = 'phoenix',
+                      model: str = None,
                       guidance_scale: float = 7.0) -> Optional[str]:
         """
         単一の画像を生成
@@ -60,14 +62,17 @@ class LeonardoGenerator:
             生成された画像パス、またはNone
         """
         endpoint = f'{self.base_url}/generations'
+        model = model or self.PHOENIX_MODEL_ID
 
+        # Leonardo.ai API (cloud.leonardo.ai) はモデル名でなく modelId(UUID) を要求する。
+        # Phoenix 1.0 の modelId: de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3
         payload = {
             'prompt': prompt,
             'height': height,
             'width': width,
             'num_images': 1,
             'guidance_scale': guidance_scale,
-            'model': model,
+            'modelId': model,
             'alchemy': True
         }
 
@@ -82,7 +87,7 @@ class LeonardoGenerator:
                 return None
 
             data = response.json()
-            generation_id = data.get('generations', [{}])[0].get('id')
+            generation_id = data.get('sdGenerationJob', {}).get('generationId')
 
             if not generation_id:
                 print("❌ 生成IDが取得できませんでした")
@@ -118,15 +123,19 @@ class LeonardoGenerator:
 
                 if response.status_code == 200:
                     data = response.json()
-                    generation = data.get('generations', [{}])[0]
+                    generation = data.get('generations_by_pk', {})
 
                     if generation.get('status') == 'COMPLETE':
-                        image_url = generation.get('url')
+                        images = generation.get('generated_images', [])
+                        image_url = images[0].get('url') if images else None
                         if image_url:
                             return self._download_image(image_url, filename)
                         else:
                             print("❌ 画像URLが見つかりません")
                             return None
+                    elif generation.get('status') == 'FAILED':
+                        print("❌ 生成に失敗しました（ステータス: FAILED）")
+                        return None
 
                 elapsed = time.time() - start_time
                 print(f"   待機中... ({elapsed:.0f}秒)")
