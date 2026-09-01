@@ -1,0 +1,32 @@
+# Chess Tactics Master - Code Owners
+
+# Default owners for everything
+* @zka32101
+
+# Authentication & Security
+lib/src/services/auth_service.dart @zka32101
+lib/src/services/firebase_auth_service.dart @zka32101
+lib/src/services/rate_limiting_service.dart @zka32101
+firestore.rules @zka32101
+
+# Game Logic
+lib/src/services/chess_engine.dart @zka32101
+lib/src/services/rating_calculation_service.dart @zka32101
+lib/src/services/unified_game_history_service.dart @zka32101
+
+# UI & Screens
+lib/src/screens/ @zka32101
+lib/src/widgets/ @zka32101
+
+# Tests
+test/ @zka32101
+integration_test/ @zka32101
+
+# Documentation
+docs/ @zka32101
+*.md @zka32101
+
+# Configuration
+pubspec.yaml @zka32101
+analysis_options.yaml @zka32101
+.github/ @zka32101
