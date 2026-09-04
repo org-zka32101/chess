@@ -26,12 +26,12 @@ dependencies:
   firebase_crashlytics: ^3.3.0
 
   # UI/UX
-  flutter_lottie: ^2.7.0
+  lottie: ^2.4.0
   google_fonts: ^6.1.0
   flutter_svg: ^2.0.0
 
   # Chess Engine
-  chess: ^0.7.2
+  chess: ^0.7.0
 
   # Local Storage
   sqflite: ^2.3.0
@@ -44,7 +44,7 @@ dependencies:
   sign_in_with_apple: ^5.0.0
 
   # Payment (RevenueCat)
-  purchases_flutter: ^7.8.0
+  # purchases_flutter: ^7.8.0  # TODO: Enable in Phase E (Paywall & Analytics)
 
   # Offline Caching & Data Storage
   hive: ^2.2.0
@@ -53,13 +53,17 @@ dependencies:
   # Network Connectivity
   connectivity_plus: ^5.0.0
 
+  # Device Information & Testing
+  device_info_plus: ^9.1.0
+  package_info_plus: ^5.0.0
+
   # Environment Configuration
   flutter_dotenv: ^5.1.0
 
   # Utilities
   freezed_annotation: ^2.4.1
   json_annotation: ^4.8.1
-  intl: ^0.18.0
+  intl: ^0.19.0
   logger: ^2.0.0
   dio: ^5.3.0
 
