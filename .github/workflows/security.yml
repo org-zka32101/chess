@@ -17,7 +17,7 @@ jobs:
         uses: dart-lang/setup-dart@v1
 
       - name: Get dependencies
-        run: flutter pub get
+        run: dart pub get
 
       - name: Run Dart linter
         run: dart analyze lib/ --fatal-infos
