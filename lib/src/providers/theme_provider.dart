@@ -1,111 +1,70 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:chess/src/theme/chess_theme.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Theme mode enum
-enum ThemeMode { light, dark, system }
+part 'theme_provider.g.dart';
 
-/// Theme notifier for managing light/dark mode
-class ThemeNotifier extends StateNotifier<ThemeMode> {
-  ThemeNotifier() : super(ThemeMode.system);
+/// Theme mode state notifier
+@riverpod
+class ThemeModeNotifier extends _$ThemeModeNotifier {
+  static const String _themeModeKey = 'theme_mode';
 
-  /// Set theme to light mode
-  void setLightMode() {
-    state = ThemeMode.light;
+  @override
+  Future<ThemeMode> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final modeString = prefs.getString(_themeModeKey);
+
+    if (modeString != null) {
+      return ThemeMode.values.firstWhere(
+        (mode) => mode.toString() == modeString,
+        orElse: () => ThemeMode.system,
+      );
+    }
+
+    return ThemeMode.system;
   }
 
-  /// Set theme to dark mode
-  void setDarkMode() {
-    state = ThemeMode.dark;
-  }
+  /// Set the theme mode
+  Future<void> setThemeMode(ThemeMode mode) async {
+    state = AsyncValue.data(mode);
 
-  /// Set theme to system mode (follows device settings)
-  void setSystemMode() {
-    state = ThemeMode.system;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeModeKey, mode.toString());
   }
 
   /// Toggle between light and dark mode
-  void toggleTheme() {
-    if (state == ThemeMode.light) {
-      setDarkMode();
-    } else if (state == ThemeMode.dark) {
-      setLightMode();
-    } else {
-      // In system mode, toggle to light
-      setLightMode();
-    }
-  }
+  /// If system is selected, switches to light, then dark, then back to system
+  Future<void> toggleThemeMode() async {
+    final currentMode = state.maybeWhen(
+      data: (mode) => mode,
+      orElse: () => ThemeMode.system,
+    );
 
-  /// Get MaterialThemeData for current theme mode
-  ThemeData getThemeData({required bool isDarkSystem}) {
-    switch (state) {
+    late final ThemeMode newMode;
+    switch (currentMode) {
       case ThemeMode.light:
-        return ChessTheme.getLightTheme();
+        newMode = ThemeMode.dark;
+        break;
       case ThemeMode.dark:
-        return ChessTheme.getDarkTheme();
+        newMode = ThemeMode.system;
+        break;
       case ThemeMode.system:
-        return isDarkSystem
-            ? ChessTheme.getDarkTheme()
-            : ChessTheme.getLightTheme();
+        newMode = ThemeMode.light;
+        break;
     }
-  }
 
-  /// Check if current theme is dark
-  bool isDarkMode({required bool isDarkSystem}) {
-    switch (state) {
-      case ThemeMode.light:
-        return false;
-      case ThemeMode.dark:
-        return true;
-      case ThemeMode.system:
-        return isDarkSystem;
-    }
+    await setThemeMode(newMode);
   }
 }
 
-/// Riverpod provider for theme mode
-final themeModeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>((ref) {
-  return ThemeNotifier();
-});
-
-/// Provider for whether system is using dark mode
-final systemDarkModeProvider = StateNotifierProvider<SystemDarkModeNotifier, bool>((ref) {
-  return SystemDarkModeNotifier();
-});
-
-/// Notifier for system dark mode
-class SystemDarkModeNotifier extends StateNotifier<bool> {
-  SystemDarkModeNotifier() : super(false);
-
-  /// Update system dark mode based on MediaQuery
-  void updateFromMediaQuery(MediaQueryData mediaQuery) {
-    final brightness = mediaQuery.platformBrightness;
-    state = brightness == Brightness.dark;
-  }
+/// Provider for current theme mode
+@riverpod
+Future<ThemeMode> themeMode(ThemeModeRef ref) async {
+  return ref.watch(themeModeNotifierProvider.future);
 }
 
-/// Provider to get the actual theme data based on theme mode and system setting
-final themeDataProvider = Provider<ThemeData>((ref) {
-  final themeMode = ref.watch(themeModeProvider);
-  final isDarkSystem = ref.watch(systemDarkModeProvider);
-
-  return switch (themeMode) {
-    ThemeMode.light => ChessTheme.getLightTheme(),
-    ThemeMode.dark => ChessTheme.getDarkTheme(),
-    ThemeMode.system => isDarkSystem
-        ? ChessTheme.getDarkTheme()
-        : ChessTheme.getLightTheme(),
-  };
-});
-
-/// Provider to check if current theme is dark
-final isDarkModeProvider = Provider<bool>((ref) {
-  final themeMode = ref.watch(themeModeProvider);
-  final isDarkSystem = ref.watch(systemDarkModeProvider);
-
-  return switch (themeMode) {
-    ThemeMode.light => false,
-    ThemeMode.dark => true,
-    ThemeMode.system => isDarkSystem,
-  };
-});
+/// Provider for theme mode notifier (for setting theme)
+final themeModeNotifierProvider =
+    StateNotifierProvider<ThemeModeNotifier, AsyncValue<ThemeMode>>(
+  (ref) => ThemeModeNotifier(),
+);
