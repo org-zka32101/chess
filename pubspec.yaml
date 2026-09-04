@@ -76,19 +76,21 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Assets
-  assets:
-    - assets/images/
-    - assets/lottie/
-    - assets/data/puzzles.db
-    - assets/data/stockfish.wasm
+  # Assets (commented out - to be added in development phase)
+  # TODO: Add asset directories and files to repository
+  # assets:
+  #   - assets/images/
+  #   - assets/lottie/
+  #   - assets/data/puzzles.db
+  #   - assets/data/stockfish.wasm
 
-  # Fonts
-  fonts:
-    - family: Roboto
-      fonts:
-        - asset: assets/fonts/Roboto-Regular.ttf
-        - asset: assets/fonts/Roboto-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/Roboto-Italic.ttf
-          style: italic
+  # Fonts (commented out - to be added in development phase)
+  # TODO: Add font files to assets/fonts/
+  # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: assets/fonts/Roboto-Regular.ttf
+  #       - asset: assets/fonts/Roboto-Bold.ttf
+  #         weight: 700
+  #       - asset: assets/fonts/Roboto-Italic.ttf
+  #         style: italic
