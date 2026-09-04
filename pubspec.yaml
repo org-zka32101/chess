@@ -44,7 +44,7 @@ dependencies:
   sign_in_with_apple: ^5.0.0
 
   # Payment (RevenueCat)
-  # purchases_flutter: ^7.8.0  # TODO: Enable in Phase E (Paywall & Analytics)
+  purchases_flutter: ^7.8.0  # Required for Phase E (Paywall & Analytics)
 
   # Offline Caching & Data Storage
   hive: ^2.2.0
