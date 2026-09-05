@@ -12,56 +12,56 @@ dependencies:
     sdk: flutter
 
   # State Management
-  riverpod: ^2.4.0
-  flutter_riverpod: ^2.4.0
+  riverpod: ^2.3.0
+  flutter_riverpod: ^2.3.0
   riverpod_generator: ^2.3.0
 
   # Firebase
-  firebase_core: ^2.24.0
-  firebase_auth: ^4.16.0
-  cloud_firestore: ^4.14.0
-  firebase_database: ^10.2.0
-  firebase_storage: ^11.5.0
-  firebase_analytics: ^10.7.0
-  firebase_crashlytics: ^3.3.0
+  firebase_core: ^2.20.0
+  firebase_auth: ^4.10.0
+  cloud_firestore: ^4.10.0
+  firebase_database: ^10.0.0
+  firebase_storage: ^11.1.0
+  firebase_analytics: ^10.5.0
+  firebase_crashlytics: ^3.1.0
 
   # UI/UX
-  flutter_lottie: ^2.7.0
-  google_fonts: ^6.1.0
+  lottie: ^2.4.0
+  google_fonts: ^6.0.0
   flutter_svg: ^2.0.0
 
   # Chess Engine
-  chess: ^0.7.2
+  chess: ^1.0.0
 
   # Local Storage
-  sqflite: ^2.3.0
-  path: ^1.8.3
-  path_provider: ^2.1.1
+  sqflite: ^2.2.0
+  path: ^1.8.0
+  path_provider: ^2.0.0
 
   # Authentication UI
-  firebase_ui_auth: ^1.10.0
-  google_sign_in: ^6.2.0
+  firebase_ui_auth: ^1.5.0
+  google_sign_in: ^6.0.0
   sign_in_with_apple: ^5.0.0
 
   # Payment (RevenueCat)
   # purchases_flutter: ^7.5.0
 
   # Utilities
-  freezed_annotation: ^2.4.1
-  json_annotation: ^4.8.1
+  freezed_annotation: ^2.4.0
+  json_annotation: ^4.8.0
   intl: ^0.18.0
   logger: ^2.0.0
-  dio: ^5.3.0
-  flutter_dotenv: ^5.1.0
+  dio: ^5.2.0
+  flutter_dotenv: ^5.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  build_runner: ^2.4.0
+  build_runner: ^2.3.0
   riverpod_generator: ^2.3.0
-  freezed: ^2.4.1
-  json_serializable: ^6.7.1
+  freezed: ^2.4.0
+  json_serializable: ^6.6.0
 
 flutter:
   uses-material-design: true
