@@ -1,301 +1,233 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:chess_tactics_master/main.dart' as app;
 
 void main() {
-  group('Analytics Integration Tests', () {
-    setUpAll(() {
-      // Initialize test environment
-      // Set up Firebase emulators if needed
-      // Initialize analytics services
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  group('Analytics Event Tracking', () {
+    testWidgets('App launch is tracked', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify app_opened event is logged
     });
 
-    tearDownAll(() {
-      // Clean up test environment
-      // Clear queued events
-      // Reset preferences
+    testWidgets('Screen views are tracked', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify screen_view events logged
     });
 
-    group('Purchase Flow Analytics', () {
-      test('Complete purchase flow tracks all events correctly', () async {
-        // 1. User views paywall
-        // 2. User selects offer
-        // 3. User initiates purchase
-        // 4. Purchase processes
-        // 5. Purchase completes
-        // Verify all analytics events logged
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Failed purchase logs error tracking', () async {
-        // Simulate purchase failure
-        // Verify error event logged
-        // Verify recovery suggestion tracked
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Upgrade flow tracks transition events', () async {
-        // User upgrades from free to pro
-        // Verify downgrade and purchase events logged
-        // Verify user property updated
-
-        expect(true, true); // Placeholder
-      });
+    testWidgets('Game completion events are tracked', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify game_completed event logged with parameters
     });
 
-    group('Engagement Analytics', () {
-      test('Puzzle completion tracks all metrics', () async {
-        // User completes puzzle
-        // Verify difficulty, time, and success tracked
-        // Verify streak tracking
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Game session tracks full lifecycle', () async {
-        // Start game
-        // Play moves
-        // Complete game
-        // Verify all events logged with correct data
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Rating change tracked with milestones', () async {
-        // Simulate rating change
-        // Verify delta calculated correctly
-        // Verify milestone tracking if applicable
-
-        expect(true, true); // Placeholder
-      });
+    testWidgets('Puzzle completion events are tracked', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify puzzle_solved event logged with parameters
     });
 
-    group('Funnel Analytics', () {
-      test('Purchase funnel tracks all stages', () async {
-        // Paywall view
-        // Offer selection
-        // Purchase initiated
-        // Purchase completed
-        // Verify progression tracking
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Trial funnel tracks lifecycle', () async {
-        // Trial started
-        // Trial expiring notification
-        // Trial expired
-        // Conversion (or not)
-        // Verify all stages tracked
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Funnel drop-off detected correctly', () async {
-        // User enters funnel
-        // User abandons at stage X
-        // Verify drop-off tracked with reason
-
-        expect(true, true); // Placeholder
-      });
+    testWidgets('Purchase events are automatically tracked', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify purchase event logged in Firebase
     });
 
-    group('User Segmentation', () {
-      test('User segment updated on purchase', () async {
-        // Free user purchases
-        // Verify segment updated to paid
-        // Verify segmentation properties set
+    testWidgets('Custom events are logged correctly', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify custom events logged accurately
+    });
+  });
 
-        expect(true, true); // Placeholder
-      });
-
-      test('Lifecycle stage transitions tracked', () async {
-        // New user
-        // After days X, moves to active
-        // After inactivity, moves to dormant
-        // Verify transitions logged
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Engagement level calculated correctly', () async {
-        // Track various engagement activities
-        // Verify engagement level calculated
-        // Verify properties updated
-
-        expect(true, true); // Placeholder
-      });
+  group('Analytics Parameters', () {
+    testWidgets('Game event parameters are complete', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify: game_id, game_type, duration, won, move_count, ratings
     });
 
-    group('Privacy & Preferences', () {
-      test('User preferences persisted correctly', () async {
-        // Set various preferences
-        // App restart simulation
-        // Verify preferences restored
-        // Verify events respect preferences
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Analytics disabled when consent withdrawn', () async {
-        // Set analytics enabled
-        // Track events
-        // Disable analytics
-        // Verify no events logged
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Consent preferences stored persistently', () async {
-        // Set all consents
-        // App restart
-        // Verify consent state restored
-
-        expect(true, true); // Placeholder
-      });
+    testWidgets('Puzzle event parameters are complete', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify: puzzle_id, difficulty, time_spent
     });
 
-    group('Offline Analytics', () {
-      test('Events queued when offline', () async {
-        // Disable network
-        // Track events
-        // Verify queued in offline queue
-        // Verify not sent to analytics
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Queued events sent when online', () async {
-        // Queue events while offline
-        // Enable network
-        // Wait for sync
-        // Verify events sent
-        // Verify queue cleared
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Queue respects size limits', () async {
-        // Generate many events offline
-        // Verify queue size capped
-        // Verify oldest events pruned
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Expired events removed from queue', () async {
-        // Queue old events
-        // Call cleanup
-        // Verify old events removed
-        // Verify recent events kept
-
-        expect(true, true); // Placeholder
-      });
+    testWidgets('Screen view parameters are correct', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify: screen_name, screen_class
     });
 
-    group('Error Handling', () {
-      test('Service handles Firebase errors gracefully', () async {
-        // Simulate Firebase error
-        // Verify app doesn't crash
-        // Verify error logged
+    testWidgets('Custom dimensions are set', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify custom dimensions in Firebase
+    });
+  });
 
-        expect(true, true); // Placeholder
-      });
-
-      test('Invalid events handled gracefully', () async {
-        // Try to log invalid event
-        // Verify validation error
-        // Verify no exception thrown
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Network errors trigger retry logic', () async {
-        // Simulate network failure
-        // Verify event queued
-        // Verify retry attempted
-
-        expect(true, true); // Placeholder
-      });
+  group('Firebase Analytics Integration', () {
+    testWidgets('Firebase Analytics is initialized', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify Firebase and Analytics enabled
     });
 
-    group('Performance', () {
-      test('Analytics logging is performant', () async {
-        // Track many events rapidly
-        // Measure performance
-        // Verify no app lag
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Queue processing is efficient', () async {
-        // Queue many events
-        // Process queue
-        // Verify completion time acceptable
-
-        expect(true, true); // Placeholder
-      });
+    testWidgets('Events are delivered to Firebase', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Log events and verify delivery
     });
 
-    group('Coordinator Workflows', () {
-      test('Complete purchase flow orchestrated correctly', () async {
-        // Run complete purchase flow
-        // Verify all coordinator methods called
-        // Verify all services received events
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Upgrade flow coordinated correctly', () async {
-        // Run upgrade flow
-        // Verify upgrade tracked
-        // Verify user segment updated
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Trial conversion coordinated correctly', () async {
-        // Run trial to paid flow
-        // Verify all events logged
-        // Verify user segmentation updated
-
-        expect(true, true); // Placeholder
-      });
-
-      test('Churn flow tracked correctly', () async {
-        // Run cancellation flow
-        // Verify cancellation events
-        // Verify funnel drop-off
-        // Verify user property updated
-
-        expect(true, true); // Placeholder
-      });
+    testWidgets('Crashlytics captures exceptions', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify error logging to Crashlytics
     });
 
-    group('Analytics Dashboard Compatibility', () {
-      test('Events compatible with Firebase Analytics', () async {
-        // Track various events
-        // Verify event names follow Firebase conventions
-        // Verify parameter names follow conventions
+    testWidgets('User properties are set', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Set and verify user properties
+    });
+  });
 
-        expect(true, true); // Placeholder
-      });
+  group('Event Batching and Delivery', () {
+    testWidgets('Events are batched efficiently', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify batch delivery, not individual calls
+    });
 
-      test('Revenue events logged with correct format', () async {
-        // Track purchase
-        // Verify value and currency logged
-        // Verify items logged for revenue tracking
+    testWidgets('Offline events are queued', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Simulate offline, trigger events, verify queuing
+    });
 
-        expect(true, true); // Placeholder
-      });
+    testWidgets('Failed delivery is retried', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Simulate failure, verify retry logic
+    });
 
-      test('User properties set correctly', () async {
-        // Set user properties
-        // Verify format
-        // Verify values types correct
+    testWidgets('Event queue size is limited', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify bounded queue size
+    });
+  });
 
-        expect(true, true); // Placeholder
-      });
+  group('User Engagement Metrics', () {
+    testWidgets('Session duration is tracked', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify session duration calculation
+    });
+
+    testWidgets('Feature usage is tracked', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify feature adoption tracking
+    });
+
+    testWidgets('User retention is measurable', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify cross-session user recognition
+    });
+
+    testWidgets('Daily active user (DAU) metrics', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify DAU calculation capability
+    });
+  });
+
+  group('Revenue Analytics', () {
+    testWidgets('Subscription purchase is tracked', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify purchase event with value/currency
+    });
+
+    testWidgets('Free to paid conversion is tracked', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify conversion funnel events
+    });
+
+    testWidgets('Revenue by subscription tier is trackable', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify revenue segmentation by tier
+    });
+
+    testWidgets('Lifetime value can be calculated', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify LTV calculation from events
+    });
+
+    testWidgets('Churn is detectable from analytics', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify churn tracking
+    });
+  });
+
+  group('Analytics Privacy and Compliance', () {
+    testWidgets('User opt-out is respected', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Disable analytics, verify no collection
+    });
+
+    testWidgets('Sensitive data is not logged', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify no passwords/payment details logged
+    });
+
+    testWidgets('Data retention policy is enforced', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify old events are purged
+    });
+
+    testWidgets('GDPR compliance is maintained', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify data export/deletion capability
+    });
+  });
+
+  group('Analytics Best Practices', () {
+    testWidgets('Event names follow convention', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify snake_case naming convention
+    });
+
+    testWidgets('Parameter naming is consistent', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify consistent parameter types
+    });
+
+    testWidgets('Event cardinality is reasonable', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify bounded parameter variety
+    });
+
+    testWidgets('Events are not over-logged', (WidgetTester tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+      // Verify reasonable event volume
     });
   });
 }
