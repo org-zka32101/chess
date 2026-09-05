@@ -14,6 +14,26 @@ else
     exit 1
 fi
 
+# Validate required environment variables
+if [ -z "$ENVIRONMENT" ] || [ -z "$FIREBASE_PROJECT" ] || [ -z "$REVENUECAT_KEY" ]; then
+    echo "Error: Required environment variables not set"
+    echo "  ENVIRONMENT=$ENVIRONMENT"
+    echo "  FIREBASE_PROJECT=$FIREBASE_PROJECT"
+    echo "  REVENUECAT_KEY=$REVENUECAT_KEY"
+    exit 1
+fi
+
+# Validate RevenueCat key format (pk_test_xxx or pk_live_xxx)
+if ! [[ "$REVENUECAT_KEY" =~ ^pk_(test|live)_ ]]; then
+    echo "Error: Invalid REVENUECAT_KEY format (must be pk_test_xxx or pk_live_xxx)"
+    exit 1
+fi
+
+echo "Environment validation passed"
+echo "  ENVIRONMENT=$ENVIRONMENT"
+echo "  FIREBASE_PROJECT=$FIREBASE_PROJECT"
+echo "  REVENUECAT_KEY=${REVENUECAT_KEY:0:10}... (truncated)"
+
 echo "Building Android staging release..."
 flutter build apk \
   --release \
