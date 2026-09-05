@@ -1,200 +1,148 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/subscription.dart';
-import '../services/subscription_service.dart';
-import 'auth_provider.dart';
+import 'package:riverpod/riverpod.dart';
+import '../services/paywall_service.dart';
 
-/// Subscription service provider
-final subscriptionServiceProvider = Provider((ref) {
-  final firestore = FirebaseFirestore.instance;
-  return SubscriptionService(firestore);
+/// Current subscription provider
+final currentSubscriptionProvider = StateNotifierProvider<
+    SubscriptionNotifier,
+    AsyncValue<Subscription?>>((ref) {
+  return SubscriptionNotifier();
 });
 
-/// Current user subscription stream provider
-final userSubscriptionProvider = StreamProvider<UserSubscription?>((ref) {
-  final userAsync = ref.watch(currentUserProvider);
-  final service = ref.watch(subscriptionServiceProvider);
+/// Subscription state notifier
+class SubscriptionNotifier extends StateNotifier<AsyncValue<Subscription?>> {
+  final _paywallService = PaywallService();
 
-  return userAsync.when(
-    loading: () => Stream.value(null),
-    error: (_, __) => Stream.value(null),
-    data: (user) {
-      if (user == null) {
-        return Stream.value(null);
-      }
-      return service.watchUserSubscription(user.id);
-    },
-  );
-});
+  SubscriptionNotifier() : super(const AsyncValue.loading()) {
+    _initializeSubscription();
+  }
 
-/// Check if user has premium subscription
-final isPremiumProvider = Provider<bool>((ref) {
-  final subscriptionAsync = ref.watch(userSubscriptionProvider);
+  /// Initialize subscription from service
+  Future<void> _initializeSubscription() async {
+    try {
+      state = const AsyncValue.loading();
+      await _paywallService.initialize();
+      final subscription = _paywallService.getCurrentSubscription();
+      state = AsyncValue.data(subscription);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 
-  return subscriptionAsync.when(
-    loading: () => false,
-    error: (_, __) => false,
-    data: (subscription) {
-      if (subscription == null) return false;
-      return subscription.isActive &&
-          (subscription.currentTier == SubscriptionTier.premium ||
-              subscription.currentTier == SubscriptionTier.elite);
-    },
-  );
-});
+  /// Refresh subscription
+  Future<void> refreshSubscription() async {
+    try {
+      state = const AsyncValue.loading();
+      final subscription = await _paywallService.fetchSubscription();
+      state = AsyncValue.data(subscription);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 
-/// Check if user has elite subscription
-final isEliteProvider = Provider<bool>((ref) {
-  final subscriptionAsync = ref.watch(userSubscriptionProvider);
-
-  return subscriptionAsync.when(
-    loading: () => false,
-    error: (_, __) => false,
-    data: (subscription) {
-      if (subscription == null) return false;
-      return subscription.isActive &&
-          subscription.currentTier == SubscriptionTier.elite;
-    },
-  );
-});
-
-/// Days remaining in subscription
-final subscriptionDaysRemainingProvider = Provider<int?>((ref) {
-  final subscriptionAsync = ref.watch(userSubscriptionProvider);
-
-  return subscriptionAsync.when(
-    loading: () => null,
-    error: (_, __) => null,
-    data: (subscription) => subscription?.daysRemaining,
-  );
-});
-
-/// Available offerings provider
-final offeringsProvider = FutureProvider<List<SubscriptionOffering>>((ref) async {
-  final service = ref.watch(subscriptionServiceProvider);
-  return service.getOfferings();
-});
-
-/// Feature access checker
-final featureAccessProvider =
-    FutureProvider.family<bool, PremiumFeature>((ref, feature) async {
-  final userAsync = ref.watch(currentUserProvider);
-  final service = ref.watch(subscriptionServiceProvider);
-
-  final user = userAsync.maybeWhen(
-    data: (user) => user,
-    orElse: () => null,
-  );
-
-  if (user == null) return false;
-
-  return service.hasAccessToFeature(userId: user.id, feature: feature);
-});
-
-/// Purchase history provider
-final purchaseHistoryProvider =
-    FutureProvider<List<PurchaseRecord>>((ref) async {
-  final userAsync = ref.watch(currentUserProvider);
-  final service = ref.watch(subscriptionServiceProvider);
-
-  final user = userAsync.maybeWhen(
-    data: (user) => user,
-    orElse: () => null,
-  );
-
-  if (user == null) return [];
-
-  return service.getPurchaseHistory(user.id);
-});
-
-/// Subscription action notifier
-final subscriptionActionProvider =
-    StateNotifierProvider<SubscriptionActionNotifier, AsyncValue<void>>((ref) {
-  return SubscriptionActionNotifier(ref);
-});
-
-class SubscriptionActionNotifier extends StateNotifier<AsyncValue<void>> {
-  final StateNotifierProviderRef ref;
-
-  SubscriptionActionNotifier(this.ref) : super(const AsyncValue.data(null));
-
-  /// Handle purchase (simulate)
-  Future<void> purchaseSubscription({
-    required SubscriptionTier tier,
-    required String packageId,
-    required int durationDays,
+  /// Purchase subscription
+  Future<bool> purchaseSubscription({
+    required SubscriptionType type,
+    required SubscriptionPeriod period,
   }) async {
-    state = const AsyncValue.loading();
-    final userAsync = ref.watch(currentUserProvider);
-    final service = ref.watch(subscriptionServiceProvider);
-
-    state = await AsyncValue.guard(() async {
-      final user = userAsync.maybeWhen(
-        data: (u) => u,
-        orElse: () => null,
+    try {
+      state = const AsyncValue.loading();
+      final success = await _paywallService.purchaseSubscription(
+        type: type,
+        period: period,
       );
 
-      if (user == null) {
-        throw Exception('User not authenticated');
+      if (success) {
+        final subscription = _paywallService.getCurrentSubscription();
+        state = AsyncValue.data(subscription);
+      } else {
+        state = AsyncValue.data(_paywallService.getCurrentSubscription());
       }
 
-      final expiresAt =
-          DateTime.now().add(Duration(days: durationDays));
-
-      await service.updateSubscription(
-        userId: user.id,
-        tier: tier,
-        expiresAt: expiresAt,
-        autoRenewing: true,
-        transactionId: 'txn_${DateTime.now().millisecondsSinceEpoch}',
-      );
-
-      // Invalidate cache
-      ref.invalidate(userSubscriptionProvider);
-      ref.invalidate(purchaseHistoryProvider);
-    });
+      return success;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
   }
 
   /// Cancel subscription
-  Future<void> cancelSubscription() async {
-    state = const AsyncValue.loading();
-    final userAsync = ref.watch(currentUserProvider);
-    final service = ref.watch(subscriptionServiceProvider);
+  Future<bool> cancelSubscription() async {
+    try {
+      state = const AsyncValue.loading();
+      final success = await _paywallService.cancelSubscription();
 
-    state = await AsyncValue.guard(() async {
-      final user = userAsync.maybeWhen(
-        data: (u) => u,
-        orElse: () => null,
-      );
-
-      if (user == null) {
-        throw Exception('User not authenticated');
+      if (success) {
+        final subscription = _paywallService.getCurrentSubscription();
+        state = AsyncValue.data(subscription);
+      } else {
+        state = AsyncValue.data(_paywallService.getCurrentSubscription());
       }
 
-      await service.cancelSubscription(user.id);
-      ref.invalidate(userSubscriptionProvider);
-    });
+      return success;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
   }
 
   /// Restore purchases
-  Future<void> restorePurchases() async {
-    state = const AsyncValue.loading();
-    final userAsync = ref.watch(currentUserProvider);
-    final service = ref.watch(subscriptionServiceProvider);
+  Future<bool> restorePurchases() async {
+    try {
+      state = const AsyncValue.loading();
+      final success = await _paywallService.restorePurchases();
 
-    state = await AsyncValue.guard(() async {
-      final user = userAsync.maybeWhen(
-        data: (u) => u,
-        orElse: () => null,
-      );
-
-      if (user == null) {
-        throw Exception('User not authenticated');
+      if (success) {
+        await refreshSubscription();
       }
 
-      await service.restorePurchases(user.id);
-      ref.invalidate(userSubscriptionProvider);
-      ref.invalidate(purchaseHistoryProvider);
-    });
+      return success;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
   }
 }
+
+/// Premium features provider
+final premiumFeaturesProvider = Provider((ref) {
+  final paywallService = PaywallService();
+  return paywallService.getAllPremiumFeatures();
+});
+
+/// Feature availability provider
+final featureAvailabilityProvider = Provider.family<bool, String>((ref, featureId) {
+  final paywallService = PaywallService();
+  return paywallService.isFeatureAvailable(featureId);
+});
+
+/// Subscription price provider
+final subscriptionPriceProvider = Provider.family<double, (SubscriptionType, SubscriptionPeriod)>((ref, params) {
+  final paywallService = PaywallService();
+  return paywallService.getPrice(params.$1, params.$2);
+});
+
+/// Features for tier provider
+final featuresForTierProvider = Provider.family<List<PremiumFeature>, SubscriptionType>((ref, tier) {
+  final paywallService = PaywallService();
+  return paywallService.getFeaturesForTier(tier);
+});
+
+/// Is premium user provider
+final isPremiumUserProvider = Provider((ref) {
+  final subscription = ref.watch(currentSubscriptionProvider);
+  return subscription.when(
+    data: (sub) => sub?.isPremium ?? false,
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
+/// Subscription status provider
+final subscriptionStatusProvider = Provider((ref) {
+  final subscription = ref.watch(currentSubscriptionProvider);
+  return subscription.when(
+    data: (sub) => sub?.status.toString().split('.').last ?? 'unknown',
+    loading: () => 'loading',
+    error: (_, __) => 'error',
+  );
+});
