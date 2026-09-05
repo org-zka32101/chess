@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:chess/chess.dart' as chess_lib;
 import 'package:chess/src/models/online_game.dart';
 import 'package:chess/src/providers/online_game_provider.dart';
+import 'package:chess/src/widgets/game_board.dart';
+import 'package:chess/src/widgets/time_clock.dart';
+import 'package:chess/src/widgets/game_info_panel.dart';
+import 'package:chess/src/utils/animations.dart';
+import 'package:chess/src/services/sound_service.dart';
 
 /// Screen for playing online multiplayer chess games
 class OnlineGameScreen extends ConsumerStatefulWidget {
@@ -51,69 +57,89 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
   /// Build main game board layout
   Widget _buildGameBoard(BuildContext context, OnlineGame game) {
     final isBoardActive = game.status == 'active';
+    final isPlayerTurn = _isCurrentPlayerTurn(game);
+    final isWhitePlayer = game.whitePlayerId == _getCurrentPlayerId();
 
     return Column(
       children: [
-        // Top player info (opponent)
-        _buildPlayerInfo(
-          name: game.whitePlayerId == _getCurrentPlayerId()
-              ? game.blackPlayerName
-              : game.whitePlayerName,
-          rating: game.whitePlayerId == _getCurrentPlayerId()
-              ? game.blackRating
-              : game.whiteRating,
-          timeMs: game.whitePlayerId == _getCurrentPlayerId()
+        // Top player info (opponent) with animated time clock
+        PlayerTimeClock(
+          playerName: isWhitePlayer ? game.blackPlayerName : game.whitePlayerName,
+          rating: isWhitePlayer ? game.blackRating : game.whiteRating,
+          timeMs: isWhitePlayer
               ? game.blackTimeRemainingMs
               : game.whiteTimeRemainingMs,
           isCurrentPlayer: false,
+          onTimeExpired: () => _handleOpponentTimeout(game),
         ),
 
         const Divider(height: 1),
 
-        // Chess Board (would integrate with existing board UI)
+        // Chess Board with GameBoard widget
         Expanded(
-          child: Container(
-            color: Colors.grey[100],
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Chess Board\n(FEN: ${game.currentFen})',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Moves: ${game.moves.length}',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          child: _buildChessBoardWidget(context, game, isPlayerTurn),
         ),
 
         const Divider(height: 1),
 
-        // Bottom player info (self)
-        _buildPlayerInfo(
-          name: game.whitePlayerId == _getCurrentPlayerId()
-              ? game.whitePlayerName
-              : game.blackPlayerName,
-          rating: game.whitePlayerId == _getCurrentPlayerId()
-              ? game.whiteRating
-              : game.blackRating,
-          timeMs: game.whitePlayerId == _getCurrentPlayerId()
+        // Bottom player info (self) with animated time clock
+        PlayerTimeClock(
+          playerName: isWhitePlayer ? game.whitePlayerName : game.blackPlayerName,
+          rating: isWhitePlayer ? game.whiteRating : game.blackRating,
+          timeMs: isWhitePlayer
               ? game.whiteTimeRemainingMs
               : game.blackTimeRemainingMs,
           isCurrentPlayer: true,
+          backgroundColor: Colors.blue[50],
+          onTimeExpired: () => _handlePlayerTimeout(game),
         ),
 
         // Move/Action buttons
         if (isBoardActive) _buildGameActions(context, game),
       ],
     );
+  }
+
+  /// Build chess board widget from game state
+  Widget _buildChessBoardWidget(
+    BuildContext context,
+    OnlineGame game,
+    bool isPlayerTurn,
+  ) {
+    try {
+      final gameState = chess_lib.Chess.fromFEN(game.currentFen);
+
+      return SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: GameBoard(
+            gameState: gameState,
+            moveHistory: game.moves.isNotEmpty
+                ? game.moves
+                    .map((move) => chess_lib.Move(from: move.from, to: move.to))
+                    .toList()
+                : [],
+            onMove: isPlayerTurn && game.status == 'active'
+                ? (from, to, {promotion}) => _submitMove(game, from, to)
+                : null,
+            onResign: game.status == 'active' ? () => _resign(game) : null,
+            showMaterial: true,
+            isPlayerTurn: isPlayerTurn && game.status == 'active',
+          ),
+        ),
+      );
+    } catch (e) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+            const SizedBox(height: 16),
+            Text('Error loading board: $e'),
+          ],
+        ),
+      );
+    }
   }
 
   /// Build player information widget (name, rating, time)
@@ -320,35 +346,48 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
     );
   }
 
-  /// Show game info dialog
+  /// Show game info dialog with detailed game metadata
   void _showGameInfo(BuildContext context) {
     final game = ref.read(onlineGameProvider(_gameId)).value;
     if (game == null) return;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Game Info'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.85,
+        builder: (context, scrollController) => ListView(
+          controller: scrollController,
           children: [
-            _buildInfoRow('Game ID', game.gameId),
-            _buildInfoRow('Type', game.type),
-            _buildInfoRow('Status', game.status),
-            _buildInfoRow('Time Control', game.timeControl),
-            _buildInfoRow(
-              'Total Moves',
-              game.moves.length.toString(),
+            Padding(
+              padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+              child: GameInfoPanel(
+                gameId: game.gameId,
+                gameType: game.type,
+                status: game.status,
+                timeControl: game.timeControl,
+                totalMoves: game.moves.length,
+                elapsedSeconds: game.createdAt != null
+                    ? DateTime.now().difference(game.createdAt!).inSeconds
+                    : 0,
+                whitePlayerName: game.whitePlayerName,
+                blackPlayerName: game.blackPlayerName,
+                currentTurn: game.whitePlayerId == _getCurrentPlayerId()
+                    ? (game.moves.length % 2 == 0 ? 'White' : 'Black')
+                    : (game.moves.length % 2 == 0 ? 'Black' : 'White'),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
@@ -420,18 +459,59 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
 
   /// Offer draw
   Future<void> _offerDraw(OnlineGame game) async {
-    // TODO: Implement draw offer logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Draw offer sent')),
-    );
+    try {
+      // Play notification sound
+      final soundService = ref.read(soundServiceProvider);
+      await soundService.play(SoundEffect.notification);
+
+      // TODO: Implement actual draw offer logic with backend
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Draw offer sent to opponent'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error offering draw: $e')),
+        );
+      }
+    }
   }
 
   /// Claim draw
   Future<void> _claimDraw(OnlineGame game) async {
-    // TODO: Implement draw claim logic (threefold, 50-move rule)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Draw claimed')),
-    );
+    try {
+      // Validate draw claim eligibility (threefold repetition or 50-move rule)
+      // TODO: Implement draw claim validation logic
+
+      final soundService = ref.read(soundServiceProvider);
+
+      // For now, just show a message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Draw claim validation pending...'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Play success sound if claim would be valid
+      // await soundService.play(SoundEffect.success);
+    } catch (e) {
+      if (mounted) {
+        final soundService = ref.read(soundServiceProvider);
+        await soundService.play(SoundEffect.error);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error claiming draw: $e')),
+        );
+      }
+    }
   }
 
   /// Abandon game
@@ -455,5 +535,142 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
   String _getCurrentPlayerId() {
     final auth = ref.read(firebaseAuthProvider).value;
     return auth?.uid ?? '';
+  }
+
+  /// Check if it's the current player's turn
+  bool _isCurrentPlayerTurn(OnlineGame game) {
+    try {
+      final gameState = chess_lib.Chess.fromFEN(game.currentFen);
+      final currentPlayerId = _getCurrentPlayerId();
+      final isWhitePlayer = game.whitePlayerId == currentPlayerId;
+
+      // Determine whose turn it is based on chess state
+      final isWhiteTurn = gameState.turn == chess_lib.Color.WHITE;
+
+      return isWhitePlayer == isWhiteTurn;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Handle player timeout
+  Future<void> _handlePlayerTimeout(OnlineGame game) async {
+    if (!mounted) return;
+
+    // Play timeout sound
+    final soundService = ref.read(soundServiceProvider);
+    await soundService.play(SoundEffect.error);
+
+    // Show timeout dialog and resign
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Time Expired'),
+        content: const Text('Your time has expired. The game has been lost.'),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _resign(game);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Handle opponent timeout
+  Future<void> _handleOpponentTimeout(OnlineGame game) async {
+    if (!mounted) return;
+
+    // Play victory sound
+    final soundService = ref.read(soundServiceProvider);
+    await soundService.play(SoundEffect.gameOver);
+
+    // Show victory dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Opponent Timeout'),
+        content: const Text('Your opponent ran out of time. You win!'),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Submit a move to the game
+  Future<void> _submitMove(OnlineGame game, String from, String to) async {
+    try {
+      // Validate move is legal
+      final gameState = chess_lib.Chess.fromFEN(game.currentFen);
+      final moveResult = gameState.move({'from': from, 'to': to});
+
+      if (moveResult == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invalid move')),
+          );
+        }
+        return;
+      }
+
+      // Record move in backend
+      final notifier = ref.read(onlineGameNotifierProvider.notifier);
+      final currentPlayerId = _getCurrentPlayerId();
+
+      await notifier.recordMove(
+        gameId: _gameId,
+        moveNumber: game.moves.length + 1,
+        from: from,
+        to: to,
+        playerId: currentPlayerId,
+        updatedFen: gameState.fen,
+        updatedPgn: gameState.pgn,
+      );
+
+      // Play appropriate sound based on move type and game state
+      final soundService = ref.read(soundServiceProvider);
+
+      if (moveResult.flags.contains('c')) {
+        // Capture move
+        await soundService.play(SoundEffect.capture);
+      } else {
+        // Regular move
+        await soundService.play(SoundEffect.movePiece);
+      }
+
+      // Check for check or checkmate
+      if (gameState.in_check) {
+        // Play check sound if opponent king is in check
+        await Future.delayed(const Duration(milliseconds: 200));
+        await soundService.play(SoundEffect.check);
+      }
+
+      if (gameState.in_checkmate) {
+        // Play checkmate sound
+        await Future.delayed(const Duration(milliseconds: 200));
+        await soundService.play(SoundEffect.checkmate);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Move sent'), duration: Duration(milliseconds: 800)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error submitting move: $e')),
+        );
+      }
+    }
   }
 }
