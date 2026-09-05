@@ -140,3 +140,10 @@ firebase-debug.log
 
 # Misc
 coverage/
+
+# Leonardo Image Generator
+tools/leonardo-image-generator/.env
+tools/leonardo-image-generator/generated_assets/
+tools/leonardo-image-generator/*.pyc
+tools/leonardo-image-generator/__pycache__/
+tools/leonardo-image-generator/generation_results.json

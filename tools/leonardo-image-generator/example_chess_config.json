@@ -1,0 +1,152 @@
+{
+  "project": "Chess Tactics Master",
+  "description": "Complete asset pack for Chess Tactics Master app",
+  "version": "1.0",
+  "created": "2026-08-31",
+  "assets": [
+    {
+      "name": "App Icon 1024x1024",
+      "filename": "app_icon_1024x1024.png",
+      "width": 1024,
+      "height": 1024,
+      "guidance_scale": 7.5,
+      "prompt": "Modern chess app icon, minimalist flat design, white and dark blue color scheme, elegant chess pieces (king and queen in center), app store quality, professional, isolated on transparent background, high resolution"
+    },
+    {
+      "name": "App Icon 512x512",
+      "filename": "app_icon_512x512.png",
+      "width": 512,
+      "height": 512,
+      "guidance_scale": 7.5,
+      "prompt": "Modern chess app icon, minimalist flat design, white and dark blue color scheme, elegant chess pieces, app store quality, professional, isolated on transparent background"
+    },
+    {
+      "name": "App Icon 192x192",
+      "filename": "app_icon_192x192.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.5,
+      "prompt": "Modern chess app icon, minimalist flat design, white and dark blue, chess pieces, professional, isolated"
+    },
+    {
+      "name": "Android Splash Screen",
+      "filename": "splash_android_1080x1920.png",
+      "width": 1080,
+      "height": 1920,
+      "guidance_scale": 8.0,
+      "prompt": "Chess Tactics Master splash screen, dark elegant theme with blue accents, professional chess board in center, 1080x1920 resolution, modern UI design, mobile app interface, premium quality, gradient background"
+    },
+    {
+      "name": "iOS Splash Screen",
+      "filename": "splash_ios_1170x2532.png",
+      "width": 1170,
+      "height": 2532,
+      "guidance_scale": 8.0,
+      "prompt": "Chess Tactics Master splash screen, dark elegant theme with blue accents, professional chess board in center, 1170x2532 resolution, modern iOS design, premium quality, gradient background, luxury aesthetic"
+    },
+    {
+      "name": "Chess Board Standard",
+      "filename": "chess_board_standard.png",
+      "width": 1024,
+      "height": 1024,
+      "guidance_scale": 8.0,
+      "prompt": "Professional chess board, elegant wooden texture, 8x8 grid with proper squares, clear contrast between light and dark squares, isolated on transparent background, high quality, detailed"
+    },
+    {
+      "name": "Chess Board Premium",
+      "filename": "chess_board_premium.png",
+      "width": 1024,
+      "height": 1024,
+      "guidance_scale": 8.5,
+      "prompt": "Luxury premium chess board, marble or granite texture, 8x8 grid, sophisticated design, high quality, isolated on clean background, professional photography style, detailed craftsmanship"
+    },
+    {
+      "name": "White Pieces Set",
+      "filename": "pieces_white_set.png",
+      "width": 1024,
+      "height": 512,
+      "guidance_scale": 8.0,
+      "prompt": "3D white chess pieces set arranged in a row: pawn, rook, knight, bishop, queen, king, professional 3D rendering, isolated on transparent background, high quality, detailed lighting"
+    },
+    {
+      "name": "Black Pieces Set",
+      "filename": "pieces_black_set.png",
+      "width": 1024,
+      "height": 512,
+      "guidance_scale": 8.0,
+      "prompt": "3D black chess pieces set arranged in a row: pawn, rook, knight, bishop, queen, king, professional 3D rendering, isolated on transparent background, high quality, detailed lighting"
+    },
+    {
+      "name": "Icon - Home",
+      "filename": "icon_home.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist home icon, flat design, monochrome white color, modern style, material design, clean and simple"
+    },
+    {
+      "name": "Icon - Puzzle",
+      "filename": "icon_puzzle.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist puzzle icon for chess tactics, flat design, monochrome white, modern style, material design, clean"
+    },
+    {
+      "name": "Icon - Multiplayer",
+      "filename": "icon_multiplayer.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist multiplayer/online game icon, flat design, monochrome white, modern style, material design, chess themed"
+    },
+    {
+      "name": "Icon - Profile",
+      "filename": "icon_profile.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist user profile icon, flat design, monochrome white, modern style, material design, user silhouette"
+    },
+    {
+      "name": "Icon - Settings",
+      "filename": "icon_settings.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist settings icon with gear, flat design, monochrome white, modern style, material design, clean"
+    },
+    {
+      "name": "Icon - Leaderboard",
+      "filename": "icon_leaderboard.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist leaderboard/ranking icon with chart, flat design, monochrome white, modern style, material design"
+    },
+    {
+      "name": "Feature Graphic (Play Store)",
+      "filename": "feature_graphic_1242x2688.png",
+      "width": 1242,
+      "height": 2688,
+      "guidance_scale": 8.0,
+      "prompt": "Chess Tactics Master game feature graphic for play store, shows chess board in center with UI elements around, highlights gameplay features, modern design, professional marketing image, attractive and engaging"
+    },
+    {
+      "name": "Screenshot 1 - Puzzle Screen",
+      "filename": "screenshot_puzzle_1080x1920.png",
+      "width": 1080,
+      "height": 1920,
+      "guidance_scale": 7.5,
+      "prompt": "Chess app puzzle screen screenshot, dark theme, chess board on top half, puzzle information and controls below, mobile UI design, 1080x1920 resolution, professional"
+    },
+    {
+      "name": "Screenshot 2 - Multiplayer Screen",
+      "filename": "screenshot_multiplayer_1080x1920.png",
+      "width": 1080,
+      "height": 1920,
+      "guidance_scale": 7.5,
+      "prompt": "Chess app online multiplayer screen screenshot, dark theme with blue accents, chess board, opponent info, game status, timer, mobile UI design, 1080x1920 resolution"
+    }
+  ]
+}

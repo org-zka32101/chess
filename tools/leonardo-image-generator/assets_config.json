@@ -1,0 +1,113 @@
+{
+  "project": "Chess Tactics Master",
+  "description": "Chess app UI/UX assets generation",
+  "version": "2.0.0",
+  "generated_at": "2026-08-31T09:00:00Z",
+  "status": "auto-trigger-test",
+  "assets": [
+    {
+      "name": "App Icon",
+      "filename": "app_icon_1024.png",
+      "width": 1024,
+      "height": 1024,
+      "guidance_scale": 7.0,
+      "prompt": "Modern chess app icon, minimalist design with white and dark blue color scheme, elegant chess pieces, app store quality, professional, flat design, isolated on transparent background"
+    },
+    {
+      "name": "Android Splash Screen",
+      "filename": "splash_android_1080x1920.png",
+      "width": 1080,
+      "height": 1920,
+      "guidance_scale": 7.0,
+      "prompt": "Chess board game splash screen, dark elegant theme, premium mobile UI design, modern interface, professional photography, 1080x1920 aspect ratio"
+    },
+    {
+      "name": "iOS Splash Screen",
+      "filename": "splash_ios_1170x2532.png",
+      "width": 1170,
+      "height": 2532,
+      "guidance_scale": 7.0,
+      "prompt": "Chess tactics master app splash screen, elegant dark background, professional chess pieces, modern iOS design, luxury aesthetic, 1170x2532 aspect ratio"
+    },
+    {
+      "name": "Chess Board",
+      "filename": "chess_board_1024x1024.png",
+      "width": 1024,
+      "height": 1024,
+      "guidance_scale": 7.5,
+      "prompt": "Professional chess board design, elegant wooden or marble texture, 8x8 grid, high quality, isolated on clean background, premium quality"
+    },
+    {
+      "name": "White Chess Pieces",
+      "filename": "chess_pieces_white.png",
+      "width": 512,
+      "height": 512,
+      "guidance_scale": 8.0,
+      "prompt": "3D white chess pieces set (king, queen, rook, bishop, knight, pawn), professional 3D rendering, isolated, transparent background, high quality, detailed"
+    },
+    {
+      "name": "Black Chess Pieces",
+      "filename": "chess_pieces_black.png",
+      "width": 512,
+      "height": 512,
+      "guidance_scale": 8.0,
+      "prompt": "3D black chess pieces set (king, queen, rook, bishop, knight, pawn), professional 3D rendering, isolated, transparent background, high quality, detailed"
+    },
+    {
+      "name": "Home Icon",
+      "filename": "icon_home_192x192.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist home icon for mobile app, flat design, monochrome white color, modern style, consistent with material design"
+    },
+    {
+      "name": "Puzzle Icon",
+      "filename": "icon_puzzle_192x192.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist puzzle/tactics icon for mobile app, chess themed, flat design, monochrome white color, modern style"
+    },
+    {
+      "name": "Online Game Icon",
+      "filename": "icon_game_192x192.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist multiplayer/online game icon for mobile app, chess themed, flat design, monochrome white color, modern style"
+    },
+    {
+      "name": "Profile Icon",
+      "filename": "icon_profile_192x192.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist user profile icon for mobile app, flat design, monochrome white color, modern style, consistent material design"
+    },
+    {
+      "name": "Settings Icon",
+      "filename": "icon_settings_192x192.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist settings icon for mobile app, flat design, monochrome white color, modern style, gear symbol"
+    },
+    {
+      "name": "Leaderboard Icon",
+      "filename": "icon_leaderboard_192x192.png",
+      "width": 192,
+      "height": 192,
+      "guidance_scale": 7.0,
+      "prompt": "Minimalist leaderboard/ranking icon for mobile app, flat design, monochrome white color, modern style, chart symbol"
+    },
+    {
+      "name": "Play Store Feature",
+      "filename": "feature_graphic_1242x2688.png",
+      "width": 1242,
+      "height": 2688,
+      "guidance_scale": 7.5,
+      "prompt": "Chess tactics master game feature graphic for play store listing, professional design, shows gameplay and features, modern style, attractive"
+    }
+  ]
+}

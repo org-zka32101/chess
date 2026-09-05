@@ -1,0 +1,97 @@
+name: Generate Leonardo.ai Assets
+
+on:
+  workflow_dispatch:  # 手動トリガー
+  push:
+    paths:
+      - 'tools/leonardo-image-generator/assets_config.json'
+      - 'tools/leonardo-image-generator/example_chess_config.json'
+      - '.github/workflows/generate-leonardo-assets.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd tools/leonardo-image-generator
+          pip install -r requirements.txt
+
+      - name: Generate assets
+        env:
+          LEONARDO_API_KEY: ${{ secrets.LEONARDO_API_KEY }}
+        run: |
+          cd tools/leonardo-image-generator
+          python leonardo_generator.py --config assets_config.json
+
+          # 生成結果をサマリーに出力
+          if [ -f "generated_assets/generation_results.json" ]; then
+            echo "### 🎨 生成完了" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "生成されたアセット:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            python3 -c "
+import json
+with open('generated_assets/generation_results.json') as f:
+    results = json.load(f)
+for filename, path in results.items():
+    print(f'- ✅ {filename}')
+            " >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check for generated files
+        id: check-files
+        run: |
+          if [ -d "tools/leonardo-image-generator/generated_assets" ] && [ $(find tools/leonardo-image-generator/generated_assets -type f | wc -l) -gt 0 ]; then
+            echo "has-assets=true" >> $GITHUB_OUTPUT
+            echo "file-count=$(find tools/leonardo-image-generator/generated_assets -type f | wc -l)" >> $GITHUB_OUTPUT
+          else
+            echo "has-assets=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create commit if assets were generated
+        if: steps.check-files.outputs.has-assets == 'true'
+        run: |
+          cd tools/leonardo-image-generator
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # ステージングと確認
+          git add generated_assets/ || true
+          git status
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🎨 Auto-generated Leonardo.ai assets (${{ steps.check-files.outputs.file-count }} files)"
+            git push origin ${{ github.ref }}
+          fi
+
+      - name: Generate summary report
+        if: always()
+        run: |
+          echo "### 📊 生成レポート" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **実行時刻**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **トリガー**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **ブランチ**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **コミット**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📁 生成ディレクトリ: \`tools/leonardo-image-generator/generated_assets/\`" >> $GITHUB_STEP_SUMMARY
