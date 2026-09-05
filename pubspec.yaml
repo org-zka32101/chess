@@ -12,23 +12,23 @@ dependencies:
     sdk: flutter
 
   # State Management
-  riverpod: ^2.3.0
-  flutter_riverpod: ^2.3.0
-  riverpod_generator: ^2.3.0
+  riverpod: ^2.2.0
+  flutter_riverpod: ^2.2.0
+  riverpod_generator: ^2.2.0
 
   # Firebase
-  firebase_core: ^2.20.0
-  firebase_auth: ^4.10.0
-  cloud_firestore: ^4.10.0
-  firebase_database: ^10.0.0
-  firebase_storage: ^11.1.0
-  firebase_analytics: ^10.5.0
-  firebase_crashlytics: ^3.1.0
+  firebase_core: ^2.13.0
+  firebase_auth: ^4.4.0
+  cloud_firestore: ^4.4.0
+  firebase_database: ^9.1.0
+  firebase_storage: ^11.0.0
+  firebase_analytics: ^10.0.0
+  firebase_crashlytics: ^3.0.0
 
   # UI/UX
-  lottie: ^2.4.0
-  google_fonts: ^6.0.0
-  flutter_svg: ^2.0.0
+  lottie: ^2.0.0
+  google_fonts: ^5.1.0
+  flutter_svg: ^1.1.0
 
   # Chess Engine
   chess: ^1.0.0
@@ -57,11 +57,11 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
-  build_runner: ^2.3.0
-  riverpod_generator: ^2.3.0
-  freezed: ^2.4.0
-  json_serializable: ^6.6.0
+  flutter_lints: ^2.0.0
+  build_runner: ^2.2.0
+  riverpod_generator: ^2.2.0
+  freezed: ^2.1.0
+  json_serializable: ^6.1.0
 
 flutter:
   uses-material-design: true
