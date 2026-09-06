@@ -12,7 +12,17 @@ echo ""
 
 # Step 1: Create project
 echo "Step 1: Creating Firebase staging project (if needed)..."
-firebase projects:create $PROJECT_ID --quiet || echo "Project already exists"
+if firebase projects:list --quiet | grep -q "^$PROJECT_ID$"; then
+    echo "✓ Project $PROJECT_ID already exists"
+else
+    echo "Creating new project $PROJECT_ID..."
+    if ! firebase projects:create $PROJECT_ID --quiet; then
+        echo "Error: Failed to create Firebase project $PROJECT_ID"
+        echo "Verify you have permission to create projects and Firebase CLI is authenticated"
+        exit 1
+    fi
+    echo "✓ Project $PROJECT_ID created successfully"
+fi
 echo ""
 
 # Step 2: Deploy Firestore rules
